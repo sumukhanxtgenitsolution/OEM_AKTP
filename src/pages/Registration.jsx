@@ -12,6 +12,14 @@ import {
   getAgentTags
 } from '../services/api'
 
+const UPLOAD_LABELS = {
+  RCFRONT: 'RC Front',
+  RCBACK: 'RC Back',
+  VEHICLEFRONT: 'Vehicle Front',
+  VEHICLESIDE: 'Vehicle Side',
+  TAGAFFIX: 'Tag Affixed'
+}
+
 const STEPS = [
   { id: 1, title: 'Vehicle Details', icon: Car },
   { id: 2, title: 'Verify OTP', icon: Phone },
@@ -20,8 +28,6 @@ const STEPS = [
   { id: 5, title: 'Assign Tag', icon: Tag },
   { id: 6, title: 'Complete', icon: CheckCircle },
 ]
-
-const IMAGE_TYPES = ['RCFRONT', 'RCBACK', 'VEHICLEFRONT', 'VEHICLESIDE', 'TAGAFFIX']
 
 const StepIndicator = ({ steps, current }) => (
   <div className="flex items-center justify-between mb-8 overflow-x-auto pb-2">
@@ -76,6 +82,7 @@ export default function Registration() {
   const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', ''])
   const [vehicleDetails, setVehicleDetails] = useState(null)
   const [custDetails, setCustDetails] = useState(null)
+  const [vahanSuccess, setVahanSuccess] = useState(false)
   const [needsWallet, setNeedsWallet] = useState(false)
 
   // Step 3 - KYC
@@ -133,19 +140,21 @@ export default function Registration() {
     if (otpVal.length !== 6) { toast.error('Enter 6-digit OTP'); return }
     setLoading(true)
     try {
-      const res = await validateOtp({ validateOtpReq: { otp: otpVal, sessionId } })
+      const res = await validateOtp({ validateOtpReq: { mobileNo: vehicleForm.mobileNo, otp: otpVal, sessionId } })
       const resp = res.data?.validateOtpResp
       if (!resp) throw new Error(res.data?.response?.errorDesc || 'OTP validation failed')
+      setVahanSuccess(res.data?.vahanSuccess === true)
       setVehicleDetails(resp.vrnDetails)
       setCustDetails(resp.custDetails)
-      const walletExists = resp.custDetails?.walletStatus === 'Active'
+      const walletExists = resp.custDetails?.walletStatus !== 'NE' && resp.custDetails?.walletStatus !== undefined
       setNeedsWallet(!walletExists)
       toast.success('OTP verified!')
+      // Pre-fill KYC form with available data from Vahan
+      if (resp.custDetails?.name) setKycForm(f => ({ ...f, name: resp.custDetails.name, lastName: resp.custDetails.lastName || '' }))
       if (!walletExists) {
         next() // go to KYC
       } else {
         setStep(4) // skip KYC, go to docs
-        fetchAgentTags()
       }
     } catch (err) {
       toast.error(err?.response?.data?.message || err.message || 'Invalid OTP')
@@ -168,15 +177,17 @@ export default function Registration() {
     const otpVal = digits.join('')
     setLoading(true)
     try {
-      const res = await validateOtp({ validateOtpReq: { otp: otpVal, sessionId } })
+      const res = await validateOtp({ validateOtpReq: { mobileNo: vehicleForm.mobileNo, otp: otpVal, sessionId } })
       const resp = res.data?.validateOtpResp
       if (!resp) throw new Error(res.data?.response?.errorDesc || 'OTP validation failed')
+      setVahanSuccess(res.data?.vahanSuccess === true)
       setVehicleDetails(resp.vrnDetails)
       setCustDetails(resp.custDetails)
-      const walletExists = resp.custDetails?.walletStatus === 'Active'
+      const walletExists = resp.custDetails?.walletStatus !== 'NE' && resp.custDetails?.walletStatus !== undefined
       setNeedsWallet(!walletExists)
       toast.success('OTP verified!')
-      if (!walletExists) { next() } else { setStep(4); fetchAgentTags() }
+      if (resp.custDetails?.name) setKycForm(f => ({ ...f, name: resp.custDetails.name, lastName: resp.custDetails.lastName || '' }))
+      if (!walletExists) { next() } else { setStep(4) }
     } catch (err) {
       toast.error(err?.response?.data?.message || err.message || 'Invalid OTP')
     } finally {
@@ -211,28 +222,54 @@ export default function Registration() {
   }
 
   // ── STEP 4: Upload Documents ──────────────────────────────────────────
-  const handleUploadFile = async (imageType, file) => {
-    if (!file) return
-    setUploadProgress(p => ({ ...p, [imageType]: 'uploading' }))
-    try {
-      const base64 = await toBase64(file)
-      await uploadDocument({ regDetails: { sessionId }, documentDetails: { imageType, image: base64 } })
-      setUploads(u => ({ ...u, [imageType]: true }))
-      setUploadProgress(p => ({ ...p, [imageType]: 'done' }))
-      toast.success(`${imageType} uploaded!`)
-    } catch (err) {
-      setUploadProgress(p => ({ ...p, [imageType]: 'error' }))
-      toast.error(`Failed to upload ${imageType}`)
-    }
+  const getRequiredDocs = () => {
+    const isVc4 = String(vehicleDetails?.npciVehicleClassID || (vehicleForm.vehicleCategory === 'VC4' ? '4' : '0')) === '4'
+    if (isVc4 && vahanSuccess) return ['VEHICLEFRONT']
+    if (isVc4 && !vahanSuccess) return ['RCFRONT', 'RCBACK', 'VEHICLEFRONT']
+    return ['RCFRONT', 'RCBACK', 'VEHICLEFRONT', 'VEHICLESIDE', 'TAGAFFIX']
   }
 
-  const allDocsUploaded = IMAGE_TYPES.every(t => uploads[t])
+  const requiredDocs = getRequiredDocs()
+  const allDocsUploaded = requiredDocs.every(t => uploads[t] !== undefined)
+
+  const handleUploadFile = (imageType, file) => {
+    if (!file) return
+    setUploads(u => ({ ...u, [imageType]: file }))
+    setUploadProgress(p => ({ ...p, [imageType]: 'done' }))
+  }
+
+  const handleUploadAllAndContinue = async () => {
+    if (!allDocsUploaded) return toast.error('Upload all required documents')
+    setLoading(true)
+    try {
+      const formData = new FormData()
+      formData.append('mobileNo', String(vehicleForm.mobileNo || ''))
+      formData.append('vahanSuccess', vahanSuccess ? '1' : '0')
+      formData.append('npciVehicleClassID', String(vehicleDetails?.npciVehicleClassID || (vehicleForm.vehicleCategory === 'VC4' ? '4' : '0')))
+      
+      requiredDocs.forEach(docType => {
+        if(uploads[docType]) {
+          formData.append(docType, uploads[docType])
+        }
+      })
+      
+      const res = await uploadDocument(formData)
+      toast.success('All documents uploaded successfully!')
+      next()
+      fetchAgentTags()
+    } catch (err) {
+      toast.error(err?.response?.data?.message || err.message || 'Failed to upload documents')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // ── STEP 5: Fetch Tags + Register ────────────────────────────────────
   const fetchAgentTags = async () => {
     try {
       const res = await getAgentTags()
-      setAgentTags(res.data || [])
+      const list = Array.isArray(res.data) ? res.data : res.data?.data || []
+      setAgentTags(list.filter(t => ['Assigned', 'Available'].includes(t.status)))
     } catch { setAgentTags([]) }
   }
 
@@ -264,7 +301,7 @@ export default function Registration() {
         custName: custDetails?.name || '',
         custMobileNo: vehicleForm.mobileNo,
         walletId: custDetails?.walletId || '',
-        serialNo: selectedTag.serialNo,
+        serialNo: selectedTag.kitNo || selectedTag.serialNo,
         tid: selectedTag.tid || '',
         custId: custDetails?.custId || ''
       })
@@ -282,9 +319,9 @@ export default function Registration() {
 
   const handleReset = () => {
     setStep(1); setMode('chassis'); setVehicleForm({ chassisNo: '', vehicleNo: '', engineNo: '', mobileNo: '', vehicleCategory: 'VC4' })
-    setSessionId(''); setOtpDigits(['','','','','','']); setVehicleDetails(null); setCustDetails(null)
+    setSessionId(''); setOtpDigits(['','','','','','']); setVehicleDetails(null); setCustDetails(null); setVahanSuccess(false)
     setNeedsWallet(false); setKycForm({ name: '', lastName: '', dob: '', docType: '1', docNo: '', expiryDate: '' })
-    setUploads({}); setUploadProgress({}); setSelectedTag(null); setTagResult(null)
+    setUploads({}); setUploadProgress({}); setAgentTags([]); setSelectedTag(null); setTagResult(null)
   }
 
   return (
@@ -368,6 +405,13 @@ export default function Registration() {
             <motion.div key="s3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <h2 className="text-lg font-semibold text-white mb-1">Customer KYC</h2>
               <p className="text-gray-500 text-sm mb-5">New customer – create wallet before activation</p>
+              {vehicleDetails && (
+                <div className="bg-gray-800/60 rounded-xl p-3 mb-4 text-sm flex items-center gap-3">
+                  <span className="text-brand-400 font-semibold">{vehicleDetails.vehicleNo || vehicleForm.chassisNo}</span>
+                  <span className="text-gray-500">•</span>
+                  <span className="text-gray-400">{vehicleDetails.vehicleManuf} {vehicleDetails.model}</span>
+                </div>
+              )}
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <input className="input-field" placeholder="First Name *" value={kycForm.name} onChange={e => setKycForm(f => ({ ...f, name: e.target.value }))} />
@@ -399,7 +443,21 @@ export default function Registration() {
           {step === 4 && (
             <motion.div key="s4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <h2 className="text-lg font-semibold text-white mb-1">Upload Documents</h2>
-              <p className="text-gray-500 text-sm mb-5">All 5 images are required before activation</p>
+              <p className="text-gray-500 text-sm mb-3">{requiredDocs.length === 1 ? 'Upload vehicle photo to proceed' : `Upload all ${requiredDocs.length} documents before activation`}</p>
+              {vahanSuccess && (
+                <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-green-900/20 border border-green-800/40 text-sm">
+                  <CheckCircle size={14} className="text-green-400" />
+                  <span className="text-green-400">Vahan verified</span>
+                  <span className="text-gray-500">— fewer documents needed</span>
+                </div>
+              )}
+              {!needsWallet && custDetails && (
+                <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-brand-900/20 border border-brand-800/40 text-sm">
+                  <CheckCircle size={14} className="text-brand-400" />
+                  <span className="text-brand-400">Wallet exists</span>
+                  <span className="text-gray-500">— KYC step skipped</span>
+                </div>
+              )}
               {vehicleDetails && (
                 <div className="bg-gray-800/60 rounded-xl p-4 mb-5 text-sm">
                   <p className="text-brand-400 font-semibold mb-2">{vehicleDetails.vehicleNo || vehicleForm.chassisNo}</p>
@@ -412,9 +470,9 @@ export default function Registration() {
                 </div>
               )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {IMAGE_TYPES.map(imgType => {
+                {requiredDocs.map(imgType => {
                   const status = uploadProgress[imgType]
-                  const done = uploads[imgType]
+                  const done = uploads[imgType] !== undefined
                   return (
                     <label key={imgType} className={`relative flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all duration-200
                       ${done ? 'border-green-700 bg-green-900/20' : 'border-gray-700 bg-gray-800/50 hover:border-brand-700'}`}>
@@ -427,7 +485,7 @@ export default function Registration() {
                           : <Upload size={16} className="text-gray-400" />}
                       </div>
                       <div>
-                        <p className={`text-sm font-medium ${done ? 'text-green-400' : 'text-white'}`}>{imgType}</p>
+                        <p className={`text-sm font-medium ${done ? 'text-green-400' : 'text-white'}`}>{UPLOAD_LABELS[imgType] || imgType}</p>
                         <p className="text-xs text-gray-500">{done ? 'Uploaded ✓' : status === 'uploading' ? 'Uploading...' : 'Click to upload'}</p>
                       </div>
                     </label>
@@ -435,8 +493,8 @@ export default function Registration() {
                 })}
               </div>
               <div className="flex gap-3 mt-6">
-                <button className="btn-secondary flex-1" onClick={back}>Back</button>
-                <button className="btn-primary flex-1" onClick={() => { next(); fetchAgentTags() }} disabled={!allDocsUploaded}>
+                <button className="btn-secondary flex-1" onClick={() => setStep(needsWallet ? 3 : 2)}>Back</button>
+                <button className="btn-primary flex-1" onClick={handleUploadAllAndContinue} disabled={loading || !allDocsUploaded}>
                   Continue <ChevronRight size={16} />
                 </button>
               </div>
@@ -460,7 +518,7 @@ export default function Registration() {
                         className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all duration-200 text-left
                           ${selectedTag?._id === tag._id ? 'border-brand-600 bg-brand-900/30' : 'border-gray-700 bg-gray-800/50 hover:border-gray-600'}`}>
                         <div>
-                          <p className="font-mono text-sm text-white font-semibold">{tag.serialNo}</p>
+                          <p className="font-mono text-sm text-white font-semibold">{tag.kitNo || tag.serialNo}</p>
                           <p className="text-xs text-gray-500 mt-0.5">{tag.isBajaj ? 'Bajaj' : 'Livquick'} • {tag.tagClass || 'Standard'}</p>
                         </div>
                         {selectedTag?._id === tag._id && <CheckCircle size={18} className="text-brand-500" />}

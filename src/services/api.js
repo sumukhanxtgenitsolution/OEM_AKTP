@@ -46,8 +46,10 @@ export const getVehicleMake = (payload) =>
 export const getVehicleModel = (payload) =>
   api.post('/api/bajaj/customer/vehicle-model', payload)
 
-export const uploadDocument = (payload) =>
-  api.post('/api/bajaj/upload/upload-doc', payload)
+export const uploadDocument = (formData) =>
+  api.post('/api/bajaj/upload/kyc', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
 
 export const registerFastag = (payload) =>
   api.post('/api/bajaj/customer/register-fastag', payload)

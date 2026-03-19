@@ -17,7 +17,7 @@ export default function Inventory() {
 
   useEffect(() => {
     let list = [...tags]
-    if (search) list = list.filter(t => t.serialNo?.toLowerCase().includes(search.toLowerCase()))
+    if (search) list = list.filter(t => (t.kitNo || t.serialNo || '')?.toLowerCase().includes(search.toLowerCase()))
     if (bankFilter !== 'all') list = list.filter(t => bankFilter === 'bajaj' ? t.isBajaj : !t.isBajaj)
     setFiltered(list)
   }, [tags, search, bankFilter])
@@ -26,7 +26,8 @@ export default function Inventory() {
     setLoading(true)
     try {
       const res = await getAgentTags()
-      setTags(res.data || [])
+      const list = Array.isArray(res.data) ? res.data : res.data?.data || []
+      setTags(list)
     } catch {
       toast.error('Failed to load inventory')
     } finally {
@@ -113,7 +114,7 @@ export default function Inventory() {
                 </span>
                 <CheckCircle size={14} className="text-green-400" />
               </div>
-              <p className="font-mono text-sm font-semibold text-white mb-1">{tag.serialNo}</p>
+              <p className="font-mono text-sm font-semibold text-white mb-1">{tag.kitNo || tag.serialNo}</p>
               {tag.tid && <p className="font-mono text-xs text-gray-500">TID: {tag.tid}</p>}
               <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-800">
                 <Clock size={12} className="text-gray-600" />

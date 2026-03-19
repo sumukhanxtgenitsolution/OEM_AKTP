@@ -74,7 +74,8 @@ export default function Replacement() {
       toast.success('OTP verified!')
       setStep(3)
       const tagRes = await getAgentTags()
-      setAgentTags(tagRes.data || [])
+      const list = Array.isArray(tagRes.data) ? tagRes.data : tagRes.data?.data || []
+      setAgentTags(list.filter(t => ['Assigned', 'Available'].includes(t.status)))
     } catch (err) {
       toast.error(err?.response?.data?.message || err.message || 'Invalid OTP')
     } finally { setLoading(false) }
@@ -90,7 +91,7 @@ export default function Replacement() {
         vehicleNo: form.vehicleNo || vehicleDetails?.vehicleNo,
         walletId: custDetails?.walletId || form.walletId,
         sessionId,
-        serialNo: selectedTag.serialNo,
+        serialNo: selectedTag.kitNo || selectedTag.serialNo,
         reason,
         ...(reason === '99' ? { reasonDesc } : {}),
         debitAmt: vehicleDetails?.repTagCost || '0',
@@ -203,7 +204,7 @@ export default function Replacement() {
                         className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all text-left
                           ${selectedTag?._id === tag._id ? 'border-brand-600 bg-brand-900/30' : 'border-gray-700 hover:border-gray-600'}`}>
                         <div>
-                          <p className="font-mono text-sm text-white">{tag.serialNo}</p>
+                          <p className="font-mono text-sm text-white">{tag.kitNo || tag.serialNo}</p>
                           <p className="text-xs text-gray-500">{tag.isBajaj ? 'Bajaj' : 'Livquick'}</p>
                         </div>
                         {selectedTag?._id === tag._id && <CheckCircle size={16} className="text-brand-500" />}
