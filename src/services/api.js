@@ -15,7 +15,14 @@ api.interceptors.request.use((config) => {
 })
 
 api.interceptors.response.use(
-  (res) => res,
+  (res) => {
+    // Backend wraps Bajaj responses under apiResponse – flatten for frontend
+    if (res.data?.apiResponse) {
+      const { apiResponse, ...rest } = res.data
+      res.data = { ...rest, ...apiResponse }
+    }
+    return res
+  },
   (error) => {
     if (error?.response?.status === 401) {
       localStorage.removeItem('oem_token')
