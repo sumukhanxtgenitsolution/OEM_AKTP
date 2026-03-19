@@ -41,7 +41,7 @@ export default function Replacement() {
     setLoading(true)
     try {
       const res = await sendOtp({
-        validateCustReq: { mobileNo: form.mobileNo, vehicleNo: form.vehicleNo, reqType: 'REP', resend: 0, isChassis: 0 }
+        mobileNo: form.mobileNo, vehicleNo: form.vehicleNo, reqType: 'REP', resend: 0, isChassis: 0
       })
       const sid = res.data?.validateCustResp?.sessionId
       if (!sid) throw new Error(res.data?.response?.errorDesc || 'OTP send failed')
@@ -86,22 +86,20 @@ export default function Replacement() {
     setLoading(true)
     try {
       const res = await replaceTag({
-        tagReplaceReq: {
-          mobileNo: form.mobileNo,
-          vehicleNo: form.vehicleNo || vehicleDetails?.vehicleNo,
-          walletId: custDetails?.walletId || form.walletId,
-          sessionId,
-          serialNo: selectedTag.serialNo,
-          reason,
-          ...(reason === '99' ? { reasonDesc } : {}),
-          debitAmt: vehicleDetails?.repTagCost || '0',
-          chassisNo: vehicleDetails?.chassisNo || '',
-          engineNo: vehicleDetails?.engineNo || '',
-          isNationalPermit: vehicleDetails?.isNationalPermit || '0',
-          permitExpiryDate: vehicleDetails?.permitExpiryDate || '',
-          stateOfRegistration: vehicleDetails?.stateOfRegistration || '',
-          vehicleDescriptor: vehicleDetails?.vehicleDescriptor || '',
-        }
+        mobileNo: form.mobileNo,
+        vehicleNo: form.vehicleNo || vehicleDetails?.vehicleNo,
+        walletId: custDetails?.walletId || form.walletId,
+        sessionId,
+        serialNo: selectedTag.serialNo,
+        reason,
+        ...(reason === '99' ? { reasonDesc } : {}),
+        debitAmt: vehicleDetails?.repTagCost || '0',
+        chassisNo: vehicleDetails?.chassisNo || '',
+        engineNo: vehicleDetails?.engineNo || '',
+        isNationalPermit: vehicleDetails?.isNationalPermit || '0',
+        permitExpiryDate: vehicleDetails?.permitExpiryDate || '',
+        stateOfRegistration: vehicleDetails?.stateOfRegistration || '',
+        vehicleDescriptor: vehicleDetails?.vehicleDescriptor || '',
       })
       const r = res.data?.tagReplaceResp
       if (!r) throw new Error(res.data?.response?.errorDesc || 'Replacement failed')

@@ -106,15 +106,13 @@ export default function Registration() {
     setLoading(true)
     try {
       const payload = {
-        validateCustReq: {
-          mobileNo,
-          engineNo,
-          reqType: 'REG',
-          resend: 0,
-          isChassis: mode === 'chassis' ? 1 : 0,
-          vehicleCategory: vehicleForm.vehicleCategory,
-          ...(mode === 'chassis' ? { chassisNo } : { vehicleNo }),
-        }
+        mobileNo,
+        engineNo,
+        reqType: 'REG',
+        resend: 0,
+        isChassis: mode === 'chassis' ? 1 : 0,
+        vehicleCategory: vehicleForm.vehicleCategory,
+        ...(mode === 'chassis' ? { chassisNo } : { vehicleNo }),
       }
       const res = await sendOtp(payload)
       const sid = res.data?.validateCustResp?.sessionId
@@ -243,10 +241,32 @@ export default function Registration() {
     setLoading(true)
     try {
       const res = await registerFastag({
-        regDetails: { sessionId },
-        vrnDetails: vehicleDetails,
-        custDetails: { name: custDetails?.name, mobileNo: vehicleForm.mobileNo, walletId: custDetails?.walletId },
-        fasTagDetails: { serialNo: selectedTag.serialNo, tid: selectedTag.tid || '' },
+        vrn: vehicleDetails?.vehicleNo || vehicleForm.vehicleNo,
+        chassis: vehicleDetails?.chassis || vehicleForm.chassisNo,
+        engine: vehicleDetails?.engineNo || vehicleForm.engineNo,
+        vehicleManuf: vehicleDetails?.vehicleManuf || '',
+        model: vehicleDetails?.model || '',
+        vehicleColour: vehicleDetails?.vehicleColour || '',
+        type: vehicleDetails?.type || '',
+        status: vehicleDetails?.status || '',
+        npciStatus: vehicleDetails?.npciStatus || '',
+        isCommercial: vehicleDetails?.isCommercial || '0',
+        tagVehicleClassID: vehicleDetails?.tagVehicleClassID || vehicleForm.vehicleCategory,
+        npciVehicleClassID: vehicleDetails?.npciVehicleClassID || vehicleForm.vehicleCategory,
+        vehicleType: vehicleDetails?.vehicleType || '',
+        rechargeAmount: vehicleDetails?.rechargeAmount || '0',
+        securityDeposit: vehicleDetails?.securityDeposit || '0',
+        tagCost: vehicleDetails?.tagCost || '0',
+        vehicleDescriptor: vehicleDetails?.vehicleDescriptor || '',
+        isNationalPermit: vehicleDetails?.isNationalPermit || '0',
+        permitExpiryDate: vehicleDetails?.permitExpiryDate || '',
+        stateOfRegistration: vehicleDetails?.stateOfRegistration || '',
+        custName: custDetails?.name || '',
+        custMobileNo: vehicleForm.mobileNo,
+        walletId: custDetails?.walletId || '',
+        serialNo: selectedTag.serialNo,
+        tid: selectedTag.tid || '',
+        custId: custDetails?.custId || ''
       })
       const result = res.data?.tagRegistrationResp
       if (!result) throw new Error(res.data?.response?.errorDesc || 'Registration failed')

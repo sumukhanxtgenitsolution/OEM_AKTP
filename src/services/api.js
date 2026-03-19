@@ -63,7 +63,7 @@ export const updateVRN = (payload) =>
 
 // ============ TAGS (INVENTORY) ============
 export const getAgentTags = () =>
-  api.get('/api/tags/agent-tags')
+  api.post('/api/tags/agent')
 
 export const getBajajTags = () =>
   api.post('/api/tags/bajaj-tags')
