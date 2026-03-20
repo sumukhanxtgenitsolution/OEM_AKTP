@@ -117,17 +117,17 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex">
+    <div className="min-h-screen bg-white flex">
       {/* Left: Branding + Car Visual */}
-      <div className="hidden lg:flex flex-col flex-1 relative overflow-hidden bg-gradient-to-br from-[#0a0a0a] via-[#120a0a] to-[#0a0a0a]">
-        {/* Background glow */}
+      <div className="hidden lg:flex flex-col flex-1 relative overflow-hidden bg-gradient-to-br from-red-600 via-red-700 to-red-800">
+        {/* Background pattern */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-red-600/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-t from-red-950/10 to-transparent" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-white/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-t from-red-900/30 to-transparent" />
           {/* Grid pattern */}
-          <div className="absolute inset-0 opacity-20"
+          <div className="absolute inset-0 opacity-10"
             style={{
-              backgroundImage: 'linear-gradient(rgba(220,38,38,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(220,38,38,0.1) 1px, transparent 1px)',
+              backgroundImage: 'linear-gradient(rgba(255,255,255,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.15) 1px, transparent 1px)',
               backgroundSize: '60px 60px',
             }}
           />
@@ -136,12 +136,12 @@ export default function Login() {
         {/* Logo */}
         <div className="relative p-10">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-red-600 rounded-2xl flex items-center justify-center red-glow">
-              <Zap className="w-6 h-6 text-white" fill="currentColor" />
+            <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-lg">
+              <Zap className="w-6 h-6 text-red-600" fill="currentColor" />
             </div>
             <div>
               <p className="font-display font-bold text-white text-xl">AK Toll Park</p>
-              <p className="text-red-400 text-sm font-medium tracking-wide">OEM PORTAL</p>
+              <p className="text-red-100 text-sm font-medium tracking-wide">OEM PORTAL</p>
             </div>
           </div>
         </div>
@@ -155,10 +155,10 @@ export default function Login() {
             className="text-center mb-8"
           >
             <h1 className="font-display font-bold text-5xl text-white mb-3 leading-tight">
-              Activate <span className="gradient-text-red">FASTag</span>
+              Activate <span className="text-red-100">FASTag</span>
               <br />with Ease
             </h1>
-            <p className="text-white/40 text-lg max-w-sm mx-auto">
+            <p className="text-red-100/70 text-lg max-w-sm mx-auto">
               OEM Showroom Portal — Activate tags by chassis or vehicle number instantly
             </p>
           </motion.div>
@@ -172,8 +172,8 @@ export default function Login() {
             style={{ animation: 'float 6s ease-in-out infinite' }}
           >
             <CarSVG />
-            {/* Red glow under car */}
-            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-64 h-8 bg-red-600/20 blur-xl rounded-full" />
+            {/* Glow under car */}
+            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-64 h-8 bg-white/10 blur-xl rounded-full" />
           </motion.div>
 
           {/* Feature chips */}
@@ -184,9 +184,9 @@ export default function Login() {
             className="flex flex-wrap justify-center gap-3 mt-4"
           >
             {['Chassis Activation', 'VRN Activation', 'Instant KYC', 'Real-time Reports'].map((feat) => (
-              <div key={feat} className="flex items-center gap-1.5 bg-white/5 border border-white/10 px-3 py-1.5 rounded-full">
-                <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                <span className="text-white/60 text-xs">{feat}</span>
+              <div key={feat} className="flex items-center gap-1.5 bg-white/10 border border-white/20 px-3 py-1.5 rounded-full">
+                <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                <span className="text-white/80 text-xs">{feat}</span>
               </div>
             ))}
           </motion.div>
@@ -194,20 +194,20 @@ export default function Login() {
 
         {/* Bottom tagline */}
         <div className="p-8 text-center">
-          <p className="text-white/20 text-xs">Powered by Bajaj FASTag Network • Secure & Encrypted</p>
+          <p className="text-white/40 text-xs">Powered by Bajaj FASTag Network • Secure & Encrypted</p>
         </div>
       </div>
 
       {/* Right: Login Form */}
-      <div className="w-full lg:w-[440px] flex flex-col justify-center px-8 py-12 relative">
+      <div className="w-full lg:w-[440px] flex flex-col justify-center px-8 py-12 relative bg-white">
         {/* Mobile logo */}
         <div className="lg:hidden mb-10 flex items-center gap-3">
           <div className="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center">
             <Zap className="w-5 h-5 text-white" fill="currentColor" />
           </div>
           <div>
-            <p className="font-display font-bold text-white">AK Toll Park</p>
-            <p className="text-red-400 text-xs">OEM Portal</p>
+            <p className="font-display font-bold text-gray-900">AK Toll Park</p>
+            <p className="text-red-500 text-xs">OEM Portal</p>
           </div>
         </div>
 
@@ -217,22 +217,22 @@ export default function Login() {
           transition={{ duration: 0.6 }}
         >
           <div className="mb-8">
-            <h2 className="font-display font-bold text-3xl text-white mb-2">Sign In</h2>
-            <p className="text-white/40">Access your OEM activation portal</p>
+            <h2 className="font-display font-bold text-3xl text-gray-900 mb-2">Sign In</h2>
+            <p className="text-gray-500">Access your OEM activation portal</p>
           </div>
 
           {/* Security badge */}
-          <div className="flex items-center gap-2 bg-green-500/5 border border-green-500/15 rounded-xl px-3 py-2 mb-6">
-            <Shield size={14} className="text-green-400 flex-shrink-0" />
-            <p className="text-green-400/80 text-xs">Secured with end-to-end encryption</p>
+          <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-3 py-2 mb-6">
+            <Shield size={14} className="text-green-600 flex-shrink-0" />
+            <p className="text-green-700 text-xs">Secured with end-to-end encryption</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Email */}
             <div>
-              <label className="text-white/50 text-sm font-medium mb-1.5 block">Email Address</label>
+              <label className="text-gray-600 text-sm font-medium mb-1.5 block">Email Address</label>
               <div className="relative">
-                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
+                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type="email"
                   className="input-field pl-10"
@@ -246,9 +246,9 @@ export default function Login() {
 
             {/* Password */}
             <div>
-              <label className="text-white/50 text-sm font-medium mb-1.5 block">Password</label>
+              <label className="text-gray-600 text-sm font-medium mb-1.5 block">Password</label>
               <div className="relative">
-                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
+                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type={showPass ? 'text' : 'password'}
                   className="input-field pl-10 pr-10"
@@ -260,7 +260,7 @@ export default function Login() {
                 <button
                   type="button"
                   onClick={() => setShowPass(!showPass)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
                   {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -287,13 +287,13 @@ export default function Login() {
             </button>
           </form>
 
-          <p className="text-center text-white/20 text-xs mt-8">
+          <p className="text-center text-gray-400 text-xs mt-8">
             Having trouble? Contact your administrator
           </p>
         </motion.div>
 
         {/* Bottom glow */}
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-64 h-32 bg-red-600/5 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-64 h-32 bg-red-50 blur-3xl pointer-events-none" />
       </div>
     </div>
   )

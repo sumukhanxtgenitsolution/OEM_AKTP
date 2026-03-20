@@ -17,14 +17,14 @@ const StatCard = ({ icon: Icon, label, value, sub, color, delay = 0 }) => (
       style={{ background: color }} />
     <div className="flex items-start justify-between mb-4">
       <div className={`w-10 h-10 rounded-xl flex items-center justify-center`}
-        style={{ background: `${color}15`, border: `1px solid ${color}25` }}>
+        style={{ background: `${color}12`, border: `1px solid ${color}20` }}>
         <Icon size={18} style={{ color }} />
       </div>
-      <TrendingUp size={14} className="text-white/20" />
+      <TrendingUp size={14} className="text-gray-300" />
     </div>
-    <p className="text-3xl font-display font-bold text-white mb-1">{value}</p>
-    <p className="text-white/50 text-sm">{label}</p>
-    {sub && <p className="text-white/25 text-xs mt-1">{sub}</p>}
+    <p className="text-3xl font-display font-bold text-gray-900 mb-1">{value}</p>
+    <p className="text-gray-500 text-sm">{label}</p>
+    {sub && <p className="text-gray-400 text-xs mt-1">{sub}</p>}
   </motion.div>
 )
 
@@ -33,13 +33,13 @@ const QuickAction = ({ icon: Icon, label, to, color }) => {
   return (
     <button
       onClick={() => navigate(to)}
-      className="flex flex-col items-center gap-2 p-4 glass rounded-2xl hover:border-red-600/20 transition-all duration-200 group"
+      className="flex flex-col items-center gap-2 p-4 bg-gray-50 border border-gray-200 rounded-2xl hover:border-red-200 hover:bg-red-50/50 transition-all duration-200 group"
     >
       <div className="w-12 h-12 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform"
-        style={{ background: `${color}15`, border: `1px solid ${color}20` }}>
+        style={{ background: `${color}12`, border: `1px solid ${color}20` }}>
         <Icon size={22} style={{ color }} />
       </div>
-      <span className="text-white/60 text-xs font-medium group-hover:text-white transition-colors">{label}</span>
+      <span className="text-gray-500 text-xs font-medium group-hover:text-gray-700 transition-colors">{label}</span>
     </button>
   )
 }
@@ -84,15 +84,15 @@ export default function Dashboard() {
       {/* Welcome */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="font-display font-bold text-2xl text-white">
+          <h1 className="font-display font-bold text-2xl text-gray-900">
             Good {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 18 ? 'Afternoon' : 'Evening'},{' '}
             <span className="gradient-text-red">{user?.name?.split(' ')[0] || 'Agent'}</span> 👋
           </h1>
-          <p className="text-white/40 text-sm mt-1">{format(new Date(), 'EEEE, MMMM d, yyyy')}</p>
+          <p className="text-gray-500 text-sm mt-1">{format(new Date(), 'EEEE, MMMM d, yyyy')}</p>
         </div>
-        <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/20 px-4 py-2 rounded-xl">
-          <Activity size={14} className="text-green-400 animate-pulse" />
-          <span className="text-green-400 text-sm font-medium">System Live</span>
+        <div className="flex items-center gap-2 bg-green-50 border border-green-200 px-4 py-2 rounded-xl">
+          <Activity size={14} className="text-green-600 animate-pulse" />
+          <span className="text-green-700 text-sm font-medium">System Live</span>
         </div>
       </div>
 
@@ -111,7 +111,7 @@ export default function Dashboard() {
         transition={{ delay: 0.4 }}
         className="card"
       >
-        <h2 className="font-semibold text-white mb-4 flex items-center gap-2">
+        <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
           <span className="w-1 h-5 bg-red-600 rounded-full inline-block" />
           Quick Actions
         </h2>
@@ -132,18 +132,18 @@ export default function Dashboard() {
           transition={{ delay: 0.5 }}
           className="card"
         >
-          <h2 className="font-semibold text-white mb-4 flex items-center gap-2">
+          <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
             <span className="w-1 h-5 bg-red-600 rounded-full inline-block" />
             Permitted Banks
           </h2>
           <div className="space-y-2">
             {(user?.allowedBanks?.length > 0 ? user.allowedBanks : ['Bajaj']).map((bank) => (
-              <div key={bank} className="flex items-center justify-between p-3 bg-white/3 rounded-xl">
+              <div key={bank} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-red-600/20 flex items-center justify-center">
-                    <Tag size={14} className="text-red-400" />
+                  <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
+                    <Tag size={14} className="text-red-500" />
                   </div>
-                  <span className="text-white text-sm font-medium">{bank} FASTag</span>
+                  <span className="text-gray-800 text-sm font-medium">{bank} FASTag</span>
                 </div>
                 <span className="badge-success">Active</span>
               </div>
@@ -159,11 +159,11 @@ export default function Dashboard() {
           className="card"
         >
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-white flex items-center gap-2">
+            <h2 className="font-semibold text-gray-900 flex items-center gap-2">
               <span className="w-1 h-5 bg-red-600 rounded-full inline-block" />
               Recent Activity
             </h2>
-            <button onClick={() => window.location.href='/reports'} className="text-red-400 hover:text-red-300 text-xs flex items-center gap-1">
+            <button onClick={() => window.location.href='/reports'} className="text-red-500 hover:text-red-600 text-xs flex items-center gap-1">
               View all <ArrowRight size={12} />
             </button>
           </div>
@@ -176,11 +176,11 @@ export default function Dashboard() {
             </div>
           ) : recentActivations.length === 0 ? (
             <div className="text-center py-8">
-              <Car size={32} className="text-white/10 mx-auto mb-2" />
-              <p className="text-white/30 text-sm">No activations yet today</p>
+              <Car size={32} className="text-gray-300 mx-auto mb-2" />
+              <p className="text-gray-400 text-sm">No activations yet today</p>
               <button
                 onClick={() => window.location.href='/registration'}
-                className="mt-3 text-red-400 hover:text-red-300 text-xs flex items-center gap-1 mx-auto"
+                className="mt-3 text-red-500 hover:text-red-600 text-xs flex items-center gap-1 mx-auto"
               >
                 Activate first tag <ArrowRight size={12} />
               </button>
@@ -188,13 +188,13 @@ export default function Dashboard() {
           ) : (
             <div className="space-y-2">
               {recentActivations.slice(0, 4).map((item, i) => (
-                <div key={i} className="flex items-center gap-3 p-2.5 bg-white/3 rounded-xl">
+                <div key={i} className="flex items-center gap-3 p-2.5 bg-gray-50 rounded-xl">
                   {statusIcon(item.status)}
                   <div className="flex-1 min-w-0">
-                    <p className="text-white text-xs font-medium truncate">{item.vrn || item.chassisNo}</p>
-                    <p className="text-white/30 text-xs">{item.mobile || 'N/A'}</p>
+                    <p className="text-gray-800 text-xs font-medium truncate">{item.vrn || item.chassisNo}</p>
+                    <p className="text-gray-400 text-xs">{item.mobile || 'N/A'}</p>
                   </div>
-                  <span className="text-white/30 text-xs">{item.time}</span>
+                  <span className="text-gray-400 text-xs">{item.time}</span>
                 </div>
               ))}
             </div>

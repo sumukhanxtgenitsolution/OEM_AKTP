@@ -59,7 +59,7 @@ export const uploadDocument = (formData) =>
   })
 
 export const registerFastag = (payload) =>
-  api.post('/api/bajaj/customer/register-fastag', payload)
+  api.post('/api/bajaj/customer/fasttag-registration', payload)
 
 export const replaceTag = (payload) =>
   api.post('/api/bajaj/customer/replace-tag', payload)
@@ -76,6 +76,13 @@ export const getAgentTags = () =>
 
 export const getBajajTags = () =>
   api.post('/api/tags/bajaj-tags')
+
+// ============ BAJAJ REPLACEMENT (uses REP agent) ============
+export const sendOtpReplacement = (payload) =>
+  api.post('/api/bajaj/customer/tag-rep-send-otp', payload)
+
+export const validateOtpReplacement = (payload) =>
+  api.post('/api/bajaj/customer/tag-rep-validate-otp', payload)
 
 // ============ REPORTS ============
 export const getSaleReport = (payload) =>

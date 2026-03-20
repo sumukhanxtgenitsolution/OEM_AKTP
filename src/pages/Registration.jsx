@@ -9,7 +9,7 @@ import { useAuth } from '../context/AuthContext'
 import {
   sendOtp, validateOtp, createWallet,
   uploadDocument, registerFastag, checkTagStatus,
-  getAgentTags
+  getBajajTags
 } from '../services/api'
 
 const UPLOAD_LABELS = {
@@ -38,19 +38,19 @@ const StepIndicator = ({ steps, current }) => (
         <div key={s.id} className="flex items-center flex-shrink-0">
           <div className={`flex flex-col items-center gap-1`}>
             <div className={`w-9 h-9 rounded-full border-2 flex items-center justify-center transition-all duration-300
-              ${state === 'active' ? 'bg-brand-600 border-brand-500 shadow-lg shadow-brand-900/50' :
-                state === 'done' ? 'bg-brand-900/60 border-brand-700' : 'bg-gray-800 border-gray-700'}`}>
+              ${state === 'active' ? 'bg-red-600 border-red-500 shadow-lg shadow-red-200' :
+                state === 'done' ? 'bg-red-50 border-red-200' : 'bg-gray-100 border-gray-300'}`}>
               {state === 'done'
-                ? <CheckCircle size={16} className="text-brand-400" />
-                : <Icon size={16} className={state === 'active' ? 'text-white' : 'text-gray-500'} />}
+                ? <CheckCircle size={16} className="text-red-600" />
+                : <Icon size={16} className={state === 'active' ? 'text-white' : 'text-gray-400'} />}
             </div>
-            <span className={`text-[10px] font-medium hidden sm:block ${state === 'active' ? 'text-brand-400' : 'text-gray-600'}`}>
+            <span className={`text-[10px] font-medium hidden sm:block ${state === 'active' ? 'text-red-600' : 'text-gray-500'}`}>
               {s.title}
             </span>
           </div>
           {i < steps.length - 1 && (
             <div className={`h-px w-8 md:w-16 mx-1 transition-all duration-500 ${
-              current > s.id ? 'bg-brand-700' : 'bg-gray-800'}`} />
+              current > s.id ? 'bg-red-300' : 'bg-gray-200'}`} />
           )}
         </div>
       )
@@ -146,7 +146,7 @@ export default function Registration() {
       setVahanSuccess(res.data?.vahanSuccess === true)
       setVehicleDetails(resp.vrnDetails)
       setCustDetails(resp.custDetails)
-      const walletExists = resp.custDetails?.walletStatus !== 'NE' && resp.custDetails?.walletStatus !== undefined
+      const walletExists = resp.custDetails?.walletStatus && resp.custDetails?.walletStatus !== 'NE'
       setNeedsWallet(!walletExists)
       toast.success('OTP verified!')
       // Pre-fill KYC form with available data from Vahan
@@ -183,7 +183,7 @@ export default function Registration() {
       setVahanSuccess(res.data?.vahanSuccess === true)
       setVehicleDetails(resp.vrnDetails)
       setCustDetails(resp.custDetails)
-      const walletExists = resp.custDetails?.walletStatus !== 'NE' && resp.custDetails?.walletStatus !== undefined
+      const walletExists = resp.custDetails?.walletStatus && resp.custDetails?.walletStatus !== 'NE'
       setNeedsWallet(!walletExists)
       toast.success('OTP verified!')
       if (resp.custDetails?.name) setKycForm(f => ({ ...f, name: resp.custDetails.name, lastName: resp.custDetails.lastName || '' }))
@@ -267,9 +267,9 @@ export default function Registration() {
   // ── STEP 5: Fetch Tags + Register ────────────────────────────────────
   const fetchAgentTags = async () => {
     try {
-      const res = await getAgentTags()
+      const res = await getBajajTags()
       const list = Array.isArray(res.data) ? res.data : res.data?.data || []
-      setAgentTags(list.filter(t => ['Assigned', 'Available'].includes(t.status)))
+      setAgentTags(list)
     } catch { setAgentTags([]) }
   }
 
@@ -287,7 +287,9 @@ export default function Registration() {
         type: vehicleDetails?.type || '',
         status: vehicleDetails?.status || '',
         npciStatus: vehicleDetails?.npciStatus || '',
-        isCommercial: vehicleDetails?.isCommercial || '0',
+        isCommercial: typeof vehicleDetails?.isCommercial === 'string'
+          ? vehicleDetails.isCommercial.toLowerCase() === 'true'
+          : !!vehicleDetails?.isCommercial,
         tagVehicleClassID: vehicleDetails?.tagVehicleClassID || vehicleForm.vehicleCategory,
         npciVehicleClassID: vehicleDetails?.npciVehicleClassID || vehicleForm.vehicleCategory,
         vehicleType: vehicleDetails?.vehicleType || '',
@@ -305,8 +307,8 @@ export default function Registration() {
         tid: selectedTag.tid || '',
         custId: custDetails?.custId || ''
       })
-      const result = res.data?.tagRegistrationResp
-      if (!result) throw new Error(res.data?.response?.errorDesc || 'Registration failed')
+      if (!res.data?.success) throw new Error(res.data?.message || res.data?.response?.errorDesc || 'Registration failed')
+      const result = res.data?.decryptedResponse?.tagRegistrationResp || res.data?.decryptedResponse || res.data
       setTagResult(result)
       toast.success('FASTag activated successfully!')
       setStep(6)
@@ -327,7 +329,7 @@ export default function Registration() {
   return (
     <div className="max-w-3xl mx-auto">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
-        <h1 className="text-2xl font-bold text-white">New FASTag Registration</h1>
+        <h1 className="text-2xl font-bold text-gray-900">New FASTag Registration</h1>
         <p className="text-gray-500 text-sm mt-1">Activate a new FASTag for your customer's vehicle</p>
       </motion.div>
 
@@ -338,12 +340,12 @@ export default function Registration() {
           {/* ── Step 1: Vehicle ── */}
           {step === 1 && (
             <motion.div key="s1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-              <h2 className="text-lg font-semibold text-white mb-4">Vehicle Details</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Vehicle Details</h2>
               {/* Mode Toggle */}
-              <div className="flex bg-gray-800 rounded-xl p-1 mb-5 w-fit">
+              <div className="flex bg-gray-100 rounded-xl p-1 mb-5 w-fit">
                 {[{ id: 'chassis', label: '🔩 Chassis Number' }, { id: 'vrn', label: '🚗 Vehicle Number' }].map(m => (
                   <button key={m.id} onClick={() => setMode(m.id)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${mode === m.id ? 'bg-brand-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}>
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${mode === m.id ? 'bg-red-600 text-white shadow' : 'text-gray-500 hover:text-gray-800'}`}>
                     {m.label}
                   </button>
                 ))}
@@ -376,25 +378,25 @@ export default function Registration() {
           {/* ── Step 2: OTP ── */}
           {step === 2 && (
             <motion.div key="s2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-              <h2 className="text-lg font-semibold text-white mb-2">Verify OTP</h2>
-              <p className="text-gray-500 text-sm mb-6">Enter the 6-digit OTP sent to <span className="text-white font-medium">{vehicleForm.mobileNo}</span></p>
+              <h2 className="text-lg font-semibold text-gray-900 mb-2">Verify OTP</h2>
+              <p className="text-gray-500 text-sm mb-6">Enter the 6-digit OTP sent to <span className="text-gray-900 font-medium">{vehicleForm.mobileNo}</span></p>
               <div className="flex gap-3 justify-center mb-6">
                 {otpDigits.map((d, i) => (
                   <input key={i} id={`otp-${i}`} type="text" inputMode="numeric" maxLength={1}
                     value={d}
                     onChange={e => handleOtpDigit(e.target.value, i)}
                     onKeyDown={e => e.key === 'Backspace' && !d && i > 0 && document.getElementById(`otp-${i - 1}`)?.focus()}
-                    className="w-11 h-14 text-center text-xl font-bold rounded-xl bg-gray-800 border border-gray-700 text-white focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition-all" />
+                    className="w-11 h-14 text-center text-xl font-bold rounded-xl bg-gray-50 border border-gray-300 text-gray-900 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/30 transition-all" />
                 ))}
               </div>
-              {loading && <div className="flex justify-center mb-4"><Loader2 size={24} className="animate-spin text-brand-500" /></div>}
+              {loading && <div className="flex justify-center mb-4"><Loader2 size={24} className="animate-spin text-red-500" /></div>}
               <div className="flex gap-3">
                 <button className="btn-secondary flex-1" onClick={back}>Back</button>
                 <button className="btn-primary flex-1" onClick={handleValidateOtp} disabled={loading}>
                   {loading ? 'Verifying...' : 'Verify OTP'}
                 </button>
               </div>
-              <button onClick={handleSendOtp} className="w-full text-center text-xs text-gray-500 hover:text-brand-400 mt-3 transition-colors">
+              <button onClick={handleSendOtp} className="w-full text-center text-xs text-gray-500 hover:text-red-500 mt-3 transition-colors">
                 Resend OTP
               </button>
             </motion.div>
@@ -403,13 +405,13 @@ export default function Registration() {
           {/* ── Step 3: KYC ── */}
           {step === 3 && needsWallet && (
             <motion.div key="s3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-              <h2 className="text-lg font-semibold text-white mb-1">Customer KYC</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-1">Customer KYC</h2>
               <p className="text-gray-500 text-sm mb-5">New customer – create wallet before activation</p>
               {vehicleDetails && (
-                <div className="bg-gray-800/60 rounded-xl p-3 mb-4 text-sm flex items-center gap-3">
-                  <span className="text-brand-400 font-semibold">{vehicleDetails.vehicleNo || vehicleForm.chassisNo}</span>
-                  <span className="text-gray-500">•</span>
-                  <span className="text-gray-400">{vehicleDetails.vehicleManuf} {vehicleDetails.model}</span>
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 mb-4 text-sm flex items-center gap-3">
+                  <span className="text-red-600 font-semibold">{vehicleDetails.vehicleNo || vehicleForm.chassisNo}</span>
+                  <span className="text-gray-400">•</span>
+                  <span className="text-gray-600">{vehicleDetails.vehicleManuf} {vehicleDetails.model}</span>
                 </div>
               )}
               <div className="space-y-4">
@@ -442,30 +444,30 @@ export default function Registration() {
           {/* ── Step 4: Upload Docs ── */}
           {step === 4 && (
             <motion.div key="s4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-              <h2 className="text-lg font-semibold text-white mb-1">Upload Documents</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-1">Upload Documents</h2>
               <p className="text-gray-500 text-sm mb-3">{requiredDocs.length === 1 ? 'Upload vehicle photo to proceed' : `Upload all ${requiredDocs.length} documents before activation`}</p>
               {vahanSuccess && (
-                <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-green-900/20 border border-green-800/40 text-sm">
-                  <CheckCircle size={14} className="text-green-400" />
-                  <span className="text-green-400">Vahan verified</span>
+                <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-green-50 border border-green-200 text-sm">
+                  <CheckCircle size={14} className="text-green-600" />
+                  <span className="text-green-700">Vahan verified</span>
                   <span className="text-gray-500">— fewer documents needed</span>
                 </div>
               )}
               {!needsWallet && custDetails && (
-                <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-brand-900/20 border border-brand-800/40 text-sm">
-                  <CheckCircle size={14} className="text-brand-400" />
-                  <span className="text-brand-400">Wallet exists</span>
+                <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-red-50 border border-red-200 text-sm">
+                  <CheckCircle size={14} className="text-red-500" />
+                  <span className="text-red-600">Wallet exists</span>
                   <span className="text-gray-500">— KYC step skipped</span>
                 </div>
               )}
               {vehicleDetails && (
-                <div className="bg-gray-800/60 rounded-xl p-4 mb-5 text-sm">
-                  <p className="text-brand-400 font-semibold mb-2">{vehicleDetails.vehicleNo || vehicleForm.chassisNo}</p>
-                  <div className="grid grid-cols-2 gap-2 text-gray-400">
-                    <span>Make: <span className="text-white">{vehicleDetails.vehicleManuf}</span></span>
-                    <span>Model: <span className="text-white">{vehicleDetails.model}</span></span>
-                    <span>Type: <span className="text-white">{vehicleDetails.type}</span></span>
-                    <span>RTO: <span className={vehicleDetails.rtoStatus === 'ACTIVE' ? 'text-green-400' : 'text-amber-400'}>{vehicleDetails.rtoStatus}</span></span>
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-5 text-sm">
+                  <p className="text-red-600 font-semibold mb-2">{vehicleDetails.vehicleNo || vehicleForm.chassisNo}</p>
+                  <div className="grid grid-cols-2 gap-2 text-gray-500">
+                    <span>Make: <span className="text-gray-800">{vehicleDetails.vehicleManuf}</span></span>
+                    <span>Model: <span className="text-gray-800">{vehicleDetails.model}</span></span>
+                    <span>Type: <span className="text-gray-800">{vehicleDetails.type}</span></span>
+                    <span>RTO: <span className={vehicleDetails.rtoStatus === 'ACTIVE' ? 'text-green-600' : 'text-amber-600'}>{vehicleDetails.rtoStatus}</span></span>
                   </div>
                 </div>
               )}
@@ -475,17 +477,17 @@ export default function Registration() {
                   const done = uploads[imgType] !== undefined
                   return (
                     <label key={imgType} className={`relative flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all duration-200
-                      ${done ? 'border-green-700 bg-green-900/20' : 'border-gray-700 bg-gray-800/50 hover:border-brand-700'}`}>
+                      ${done ? 'border-green-300 bg-green-50' : 'border-gray-300 bg-gray-50 hover:border-red-300'}`}>
                       <input type="file" accept="image/*" className="hidden" onChange={e => handleUploadFile(imgType, e.target.files[0])} />
                       <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0
-                        ${done ? 'bg-green-900/50' : 'bg-gray-700'}`}>
-                        {status === 'uploading' ? <Loader2 size={16} className="animate-spin text-brand-400" />
-                          : done ? <CheckCircle size={16} className="text-green-400" />
-                          : status === 'error' ? <AlertCircle size={16} className="text-red-400" />
+                        ${done ? 'bg-green-100' : 'bg-gray-200'}`}>
+                        {status === 'uploading' ? <Loader2 size={16} className="animate-spin text-red-500" />
+                          : done ? <CheckCircle size={16} className="text-green-600" />
+                          : status === 'error' ? <AlertCircle size={16} className="text-red-500" />
                           : <Upload size={16} className="text-gray-400" />}
                       </div>
                       <div>
-                        <p className={`text-sm font-medium ${done ? 'text-green-400' : 'text-white'}`}>{UPLOAD_LABELS[imgType] || imgType}</p>
+                        <p className={`text-sm font-medium ${done ? 'text-green-700' : 'text-gray-800'}`}>{UPLOAD_LABELS[imgType] || imgType}</p>
                         <p className="text-xs text-gray-500">{done ? 'Uploaded ✓' : status === 'uploading' ? 'Uploading...' : 'Click to upload'}</p>
                       </div>
                     </label>
@@ -504,11 +506,11 @@ export default function Registration() {
           {/* ── Step 5: Assign Tag ── */}
           {step === 5 && (
             <motion.div key="s5" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-              <h2 className="text-lg font-semibold text-white mb-1">Assign FASTag</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-1">Assign FASTag</h2>
               <p className="text-gray-500 text-sm mb-5">Select a tag from your inventory to assign</p>
               {agentTags.length === 0
-                ? <div className="text-center py-12 text-gray-500">
-                    <Tag size={40} className="mx-auto mb-3 text-gray-700" />
+                ? <div className="text-center py-12 text-gray-400">
+                    <Tag size={40} className="mx-auto mb-3 text-gray-300" />
                     <p>No tags in inventory</p>
                     <p className="text-xs mt-1">Contact admin to assign tags</p>
                   </div>
@@ -516,12 +518,12 @@ export default function Registration() {
                     {agentTags.map(tag => (
                       <button key={tag._id} onClick={() => setSelectedTag(tag)}
                         className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all duration-200 text-left
-                          ${selectedTag?._id === tag._id ? 'border-brand-600 bg-brand-900/30' : 'border-gray-700 bg-gray-800/50 hover:border-gray-600'}`}>
+                          ${selectedTag?._id === tag._id ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-gray-50 hover:border-gray-300'}`}>
                         <div>
-                          <p className="font-mono text-sm text-white font-semibold">{tag.kitNo || tag.serialNo}</p>
-                          <p className="text-xs text-gray-500 mt-0.5">{tag.isBajaj ? 'Bajaj' : 'Livquick'} • {tag.tagClass || 'Standard'}</p>
+                          <p className="font-mono text-sm text-gray-800 font-semibold">{tag.kitNo || tag.serialNo}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">Bajaj • {tag.tagClass || 'Standard'}</p>
                         </div>
-                        {selectedTag?._id === tag._id && <CheckCircle size={18} className="text-brand-500" />}
+                        {selectedTag?._id === tag._id && <CheckCircle size={18} className="text-red-500" />}
                       </button>
                     ))}
                   </div>
@@ -541,28 +543,28 @@ export default function Registration() {
             <motion.div key="s6" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}>
               <div className="text-center py-8">
                 <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', delay: 0.2 }}
-                  className="w-20 h-20 bg-green-900/30 border-2 border-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <CheckCircle size={40} className="text-green-400" />
+                  className="w-20 h-20 bg-green-50 border-2 border-green-400 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <CheckCircle size={40} className="text-green-500" />
                 </motion.div>
-                <h2 className="text-2xl font-bold text-white mb-2">FASTag Activated!</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">FASTag Activated!</h2>
                 <p className="text-gray-500 mb-6">The FASTag has been successfully registered</p>
                 {tagResult && (
-                  <div className="bg-gray-800/60 rounded-2xl p-5 text-left space-y-3 mb-6">
+                  <div className="bg-gray-50 border border-gray-200 rounded-2xl p-5 text-left space-y-3 mb-6">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500">Vehicle Number</span>
-                      <span className="text-white font-mono font-semibold">{tagResult.vrn || vehicleDetails?.vehicleNo}</span>
+                      <span className="text-gray-800 font-mono font-semibold">{tagResult.vrn || vehicleDetails?.vehicleNo}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500">Tag Serial No</span>
-                      <span className="text-white font-mono">{tagResult.serialNo}</span>
+                      <span className="text-gray-800 font-mono">{tagResult.serialNo}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500">Status</span>
-                      <span className="text-green-400 font-medium">{tagResult.npciStatus || 'Active'}</span>
+                      <span className="text-green-600 font-medium">{tagResult.npciStatus || 'Active'}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500">Agent Balance</span>
-                      <span className="text-white">₹{tagResult.agentBalance || '0'}</span>
+                      <span className="text-gray-800">₹{tagResult.agentBalance || '0'}</span>
                     </div>
                   </div>
                 )}

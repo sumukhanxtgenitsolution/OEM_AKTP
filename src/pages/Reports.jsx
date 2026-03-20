@@ -47,7 +47,7 @@ export default function Reports() {
       r.createdAt ? new Date(r.createdAt).toLocaleDateString('en-IN') : '-',
       r.vehicleNo || '-', r.customerName || r.name || '-',
       r.mobileNo || '-', r.serialNo || '-',
-      r.isReplacement ? 'Replacement' : 'New', r.bank || (r.isBajaj ? 'Bajaj' : 'Livquick'),
+      r.isReplacement ? 'Replacement' : 'New', r.bank || 'Bajaj',
       r.status || 'Active'
     ])
     const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n')
@@ -63,7 +63,7 @@ export default function Reports() {
     <div>
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Sales Report</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Sales Report</h1>
           <p className="text-gray-500 text-sm mt-1">View your activation and replacement history</p>
         </div>
         <button onClick={downloadCSV} className="btn-secondary text-sm">
@@ -84,9 +84,8 @@ export default function Reports() {
         <div className="flex-1 min-w-[140px]">
           <label className="text-xs text-gray-500 mb-1.5 block">Bank</label>
           <select className="input-field" value={bankFilter} onChange={e => setBankFilter(e.target.value)}>
-            <option value="all">All Banks</option>
+            <option value="all">All</option>
             <option value="Bajaj">Bajaj</option>
-            <option value="Livqick">Livquick</option>
           </select>
         </div>
         <button className="btn-primary px-6" onClick={fetchReport} disabled={loading}>
@@ -111,7 +110,7 @@ export default function Reports() {
                 <Icon size={18} style={{ color: s.color }} />
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">{loading ? '–' : s.value}</p>
+                <p className="text-2xl font-bold text-gray-900">{loading ? '–' : s.value}</p>
                 <p className="text-gray-500 text-xs">{s.label}</p>
               </div>
             </motion.div>
@@ -121,8 +120,8 @@ export default function Reports() {
 
       {/* Table */}
       <div className="card overflow-hidden p-0">
-        <div className="px-5 py-4 border-b border-gray-800 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-white">Transaction History</h3>
+        <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-gray-900">Transaction History</h3>
           <span className="text-xs text-gray-500">{data.length} records</span>
         </div>
         <div className="overflow-x-auto">
@@ -132,13 +131,13 @@ export default function Reports() {
             </div>
           ) : data.length === 0 ? (
             <div className="text-center py-16">
-              <BarChart2 size={48} className="mx-auto text-gray-700 mb-4" />
-              <p className="text-gray-400">No records found for selected period</p>
+              <BarChart2 size={48} className="mx-auto text-gray-300 mb-4" />
+              <p className="text-gray-500">No records found for selected period</p>
             </div>
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-gray-800/50">
+                <tr className="bg-gray-50">
                   {['Date', 'Vehicle No', 'Customer', 'Mobile', 'Serial No', 'Type', 'Bank', 'Status'].map(h => (
                     <th key={h} className="text-left text-xs text-gray-500 font-medium px-5 py-3 whitespace-nowrap">{h}</th>
                   ))}
@@ -146,24 +145,24 @@ export default function Reports() {
               </thead>
               <tbody>
                 {data.map((row, i) => (
-                  <tr key={row._id || i} className="border-t border-gray-800/60 hover:bg-gray-800/30 transition-colors">
+                  <tr key={row._id || i} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
                     <td className="px-5 py-3 text-gray-400 whitespace-nowrap text-xs">
                       {row.createdAt ? new Date(row.createdAt).toLocaleDateString('en-IN') : '-'}
                     </td>
-                    <td className="px-5 py-3 font-mono text-white text-xs whitespace-nowrap">{row.vehicleNo || '-'}</td>
-                    <td className="px-5 py-3 text-white whitespace-nowrap">{row.customerName || row.name || '-'}</td>
+                    <td className="px-5 py-3 font-mono text-gray-800 text-xs whitespace-nowrap">{row.vehicleNo || '-'}</td>
+                    <td className="px-5 py-3 text-gray-800 whitespace-nowrap">{row.customerName || row.name || '-'}</td>
                     <td className="px-5 py-3 text-gray-400 whitespace-nowrap">{row.mobileNo || '-'}</td>
                     <td className="px-5 py-3 font-mono text-gray-400 text-xs whitespace-nowrap">{row.serialNo || '-'}</td>
                     <td className="px-5 py-3 whitespace-nowrap">
-                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${row.isReplacement ? 'bg-amber-900/30 text-amber-400 border-amber-800/40' : 'bg-brand-900/30 text-brand-400 border-brand-800/40'}`}>
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${row.isReplacement ? 'bg-amber-50 text-amber-600 border-amber-200' : 'bg-red-50 text-red-600 border-red-200'}`}>
                         {row.isReplacement ? 'Replacement' : 'New'}
                       </span>
                     </td>
                     <td className="px-5 py-3 text-gray-400 whitespace-nowrap text-xs">
-                      {row.bank || (row.isBajaj ? 'Bajaj' : 'Livquick')}
+                      {row.bank || 'Bajaj'}
                     </td>
                     <td className="px-5 py-3 whitespace-nowrap">
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-green-900/30 text-green-400 border border-green-800/40">
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-green-50 text-green-600 border border-green-200">
                         {row.status || 'Active'}
                       </span>
                     </td>
