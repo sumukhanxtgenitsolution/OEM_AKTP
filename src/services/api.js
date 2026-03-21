@@ -48,10 +48,10 @@ export const createWallet = (payload) =>
   api.post('/api/bajaj/customer/create-wallet', payload)
 
 export const getVehicleMake = (payload) =>
-  api.post('/api/bajaj/customer/vehicle-make', payload)
+  api.post('/api/bajaj/customer/get-vehicalmaker', payload)
 
 export const getVehicleModel = (payload) =>
-  api.post('/api/bajaj/customer/vehicle-model', payload)
+  api.post('/api/bajaj/customer/get-vehicalmodel', payload)
 
 export const uploadDocument = (formData) =>
   api.post('/api/bajaj/upload/kyc', formData, {

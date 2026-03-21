@@ -8,7 +8,7 @@ import toast from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext'
 import {
   sendOtp, validateOtp, createWallet,
-  uploadDocument, registerFastag, checkTagStatus,
+  uploadDocument, registerFastag,
   getBajajTags
 } from '../services/api'
 
@@ -279,7 +279,7 @@ export default function Registration() {
     try {
       const res = await registerFastag({
         vrn: vehicleDetails?.vehicleNo || vehicleForm.vehicleNo,
-        chassis: vehicleDetails?.chassis || vehicleForm.chassisNo,
+        chassis: vehicleDetails?.chassisNo || vehicleForm.chassisNo,
         engine: vehicleDetails?.engineNo || vehicleForm.engineNo,
         vehicleManuf: vehicleDetails?.vehicleManuf || '',
         model: vehicleDetails?.model || '',
