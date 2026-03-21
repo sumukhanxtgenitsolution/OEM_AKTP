@@ -140,7 +140,7 @@ export default function Registration() {
     if (otpVal.length !== 6) { toast.error('Enter 6-digit OTP'); return }
     setLoading(true)
     try {
-      const res = await validateOtp({ validateOtpReq: { mobileNo: vehicleForm.mobileNo, otp: otpVal, sessionId } })
+      const res = await validateOtp({ validateOtpReq: { mobileNo: vehicleForm.mobileNo, otp: otpVal, sessionId, isChassis: mode === 'chassis' ? 1 : 0 } })
       const resp = res.data?.validateOtpResp
       if (!resp) throw new Error(res.data?.response?.errorDesc || 'OTP validation failed')
       setVahanSuccess(res.data?.vahanSuccess === true)
@@ -177,7 +177,7 @@ export default function Registration() {
     const otpVal = digits.join('')
     setLoading(true)
     try {
-      const res = await validateOtp({ validateOtpReq: { mobileNo: vehicleForm.mobileNo, otp: otpVal, sessionId } })
+      const res = await validateOtp({ validateOtpReq: { mobileNo: vehicleForm.mobileNo, otp: otpVal, sessionId, isChassis: mode === 'chassis' ? 1 : 0 } })
       const resp = res.data?.validateOtpResp
       if (!resp) throw new Error(res.data?.response?.errorDesc || 'OTP validation failed')
       setVahanSuccess(res.data?.vahanSuccess === true)
