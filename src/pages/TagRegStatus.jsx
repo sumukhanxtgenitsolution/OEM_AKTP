@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Tag, Car, Search, CheckCircle, XCircle, Clock, AlertCircle, Loader2 } from 'lucide-react'
+import { Tag, Car, Search, CheckCircle, XCircle, Clock, AlertCircle, Loader2, Hash } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { checkTagRegistrationStatus } from '../services/api'
+import { checkTagRegistrationStatus, checkTagStatusByChassis } from '../services/api'
 
 const TAG_STATUS_CONFIG = {
   ACTIVE: { label: 'Active', icon: CheckCircle, color: '#16a34a', bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700' },
@@ -31,28 +31,38 @@ const ResultRow = ({ label, value }) => (
 )
 
 export default function TagRegStatus() {
+  const [mode, setMode] = useState('vrn') // 'vrn' | 'chassis'
   const [vrn, setVrn] = useState('')
   const [tagSerial, setTagSerial] = useState('')
+  const [chassisNo, setChassisNo] = useState('')
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
 
   const handleCheck = async (e) => {
     e.preventDefault()
-    const cleanVrn = vrn.replace(/\s/g, '').toUpperCase()
-    if (!cleanVrn) {
-      toast.error('Please enter the Vehicle Registration Number (VRN)')
-      return
-    }
-    setLoading(true)
     setResult(null)
-    try {
-      const res = await checkTagRegistrationStatus({ vrn: cleanVrn, tagSerialNo: tagSerial.trim() })
-      setResult({ ...res.data, checked: true })
-    } catch (err) {
-      const msg = err?.response?.data?.message || err?.response?.data?.error || err.message || 'Failed to check tag status'
-      toast.error(msg)
-    } finally {
-      setLoading(false)
+
+    if (mode === 'vrn') {
+      const cleanVrn = vrn.replace(/\s/g, '').toUpperCase()
+      if (!cleanVrn) { toast.error('Please enter the Vehicle Registration Number'); return }
+      if (!tagSerial.trim()) { toast.error('Tag Serial Number is required'); return }
+      setLoading(true)
+      try {
+        const res = await checkTagRegistrationStatus({ vrn: cleanVrn, tagSerialNo: tagSerial.trim() })
+        setResult({ ...res.data, checked: true })
+      } catch (err) {
+        toast.error(err?.response?.data?.message || err?.response?.data?.error || err.message || 'Failed to check tag status')
+      } finally { setLoading(false) }
+    } else {
+      const cleanChassis = chassisNo.replace(/\s/g, '').toUpperCase()
+      if (!cleanChassis) { toast.error('Please enter the Chassis Number'); return }
+      setLoading(true)
+      try {
+        const res = await checkTagStatusByChassis({ chassisNo: cleanChassis })
+        setResult({ ...res.data, checked: true })
+      } catch (err) {
+        toast.error(err?.response?.data?.message || err?.response?.data?.error || err.message || 'Failed to check tag status by chassis')
+      } finally { setLoading(false) }
     }
   }
 
@@ -72,48 +82,93 @@ export default function TagRegStatus() {
         <p className="text-gray-500 text-sm ml-12">Check the Bajaj FASTag registration status for a vehicle.</p>
       </motion.div>
 
+      {/* Mode toggle */}
+      <div className="flex gap-2 bg-gray-100 p-1 rounded-xl w-fit">
+        {[
+          { key: 'vrn', label: 'By VRN + Tag Serial', icon: Car },
+          { key: 'chassis', label: 'By Chassis Number', icon: Hash },
+        ].map(({ key, label, icon: Icon }) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => { setMode(key); setResult(null) }}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              mode === key ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <Icon size={15} />
+            {label}
+          </button>
+        ))}
+      </div>
+
       {/* Input Card */}
       <motion.div
+        key={mode}
         className="card"
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.08 }}
+        transition={{ duration: 0.2 }}
       >
         <form onSubmit={handleCheck} className="space-y-4">
-          {/* VRN */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-              Vehicle Registration Number (VRN) <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <Car size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                value={vrn}
-                onChange={(e) => setVrn(e.target.value.toUpperCase())}
-                placeholder="e.g. MH12AB1234"
-                className="input pl-9 uppercase"
-                required
-              />
+          {mode === 'vrn' ? (
+            <>
+              {/* VRN */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                  Vehicle Registration Number (VRN) <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <Car size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    value={vrn}
+                    onChange={(e) => setVrn(e.target.value.toUpperCase())}
+                    placeholder="e.g. MH12AB1234"
+                    className="input pl-9 uppercase"
+                    required
+                  />
+                </div>
+              </div>
+              {/* Tag Serial — required */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                  Tag Serial Number <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <Tag size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    value={tagSerial}
+                    onChange={(e) => setTagSerial(e.target.value)}
+                    placeholder="e.g. 608268-004-0741875"
+                    className="input pl-9"
+                    required
+                  />
+                </div>
+                <p className="text-xs text-gray-400 mt-1">Tag serial number is required by Bajaj API</p>
+              </div>
+            </>
+          ) : (
+            /* Chassis mode */
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                Chassis Number <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <Hash size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  value={chassisNo}
+                  onChange={(e) => setChassisNo(e.target.value.toUpperCase())}
+                  placeholder="e.g. MA3FJDE1S00123456"
+                  className="input pl-9 uppercase"
+                  required
+                />
+              </div>
+              <p className="text-xs text-gray-400 mt-1">Looks up the VRN and tag serial from our activation records</p>
             </div>
-          </div>
-
-          {/* Tag Serial (optional) */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-              Tag Serial Number <span className="text-gray-400 font-normal">(optional)</span>
-            </label>
-            <div className="relative">
-              <Tag size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                value={tagSerial}
-                onChange={(e) => setTagSerial(e.target.value)}
-                placeholder="Enter tag serial number"
-                className="input pl-9"
-              />
-            </div>
-          </div>
+          )}
 
           <button
             type="submit"
@@ -152,6 +207,8 @@ export default function TagRegStatus() {
 
             {/* Details */}
             <div className="bg-white rounded-xl border border-gray-100 divide-y divide-gray-100 px-4">
+              {result.lookedUpVrn && <ResultRow label="VRN (from chassis)" value={result.lookedUpVrn} />}
+              {result.chassisNo && <ResultRow label="Chassis No." value={result.chassisNo} />}
               {result.tagId && <ResultRow label="Tag ID" value={result.tagId} />}
               {result.tagSerialNo && <ResultRow label="Tag Serial No." value={result.tagSerialNo} />}
               {result.status && <ResultRow label="Status Code" value={result.status} />}

@@ -92,6 +92,9 @@ export const getSaleReport = (payload) =>
 export const checkTagRegistrationStatus = (payload) =>
   api.post('/api/bajaj/customer/tag-registration-status', payload)
 
+export const checkTagStatusByChassis = (payload) =>
+  api.post('/api/bajaj/customer/tag-status-by-chassis', payload)
+
 // ============ PROFILE ============
 export const getAgentProfile = () =>
   api.get('/api/agent/profile')
