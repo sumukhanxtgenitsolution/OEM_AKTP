@@ -202,7 +202,7 @@ export default function Registration() {
     setLoading(true)
     try {
       const res = await createWallet({
-        reqWallet: { sessionId },
+        reqWallet: { sessionId, isChassis: mode === 'chassis' ? 1 : 0 },
         custDetails: {
           name, lastName, mobileNo: vehicleForm.mobileNo, dob,
           doc: [{ docType, docNo, ...(expiryDate ? { expiryDate } : {}) }],
@@ -246,6 +246,7 @@ export default function Registration() {
       formData.append('mobileNo', String(vehicleForm.mobileNo || ''))
       formData.append('vahanSuccess', vahanSuccess ? '1' : '0')
       formData.append('npciVehicleClassID', String(vehicleDetails?.npciVehicleClassID || (vehicleForm.vehicleCategory === 'VC4' ? '4' : '0')))
+      formData.append('isChassis', mode === 'chassis' ? '1' : '0')
       
       requiredDocs.forEach(docType => {
         if(uploads[docType]) {
