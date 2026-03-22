@@ -9,7 +9,7 @@ import { useAuth } from '../context/AuthContext'
 import {
   sendOtp, validateOtp, createWallet,
   uploadDocument, registerFastag,
-  getBajajTags
+  getBajajTags, getVehicleMake, getVehicleModel
 } from '../services/api'
 
 const UPLOAD_LABELS = {
@@ -97,8 +97,83 @@ export default function Registration() {
   const [selectedTag, setSelectedTag] = useState(null)
   const [tagResult, setTagResult] = useState(null)
 
+  // Vehicle details edit form (for when Vahan fails / fields are incomplete)
+  const [vehEdit, setVehEdit] = useState({
+    vehicleManuf: '', model: '', vehicleColour: '', type: '', status: 'ACTIVE',
+    npciStatus: 'ACTIVE', isCommercial: false, tagVehicleClassID: '4', npciVehicleClassID: '4',
+    vehicleType: '', vehicleDescriptor: 'PETROL', isNationalPermit: '2', permitExpiryDate: '',
+    stateOfRegistration: '', rechargeAmount: '0', securityDeposit: '0', tagCost: '0',
+  })
+  const [makeList, setMakeList] = useState([])
+  const [modelList, setModelList] = useState([])
+  const [loadingMakes, setLoadingMakes] = useState(false)
+  const [loadingModels, setLoadingModels] = useState(false)
+
   const next = () => setStep(s => Math.min(s + 1, 6))
   const back = () => setStep(s => Math.max(s - 1, 1))
+
+  // Helper: pre-fill vehEdit from Vahan response (whatever fields Bajaj returned)
+  const prefillVehEdit = (vrn) => {
+    if (!vrn) return
+    setVehEdit(prev => ({
+      ...prev,
+      vehicleManuf: vrn.vehicleManuf || '',
+      model: vrn.model || '',
+      vehicleColour: vrn.vehicleColour || '',
+      type: vrn.type || vehicleForm.vehicleCategory || 'VC4',
+      status: vrn.status || 'ACTIVE',
+      npciStatus: vrn.npciStatus || 'ACTIVE',
+      isCommercial: typeof vrn.isCommercial === 'string' ? vrn.isCommercial.toLowerCase() === 'true' : !!vrn.isCommercial,
+      tagVehicleClassID: vrn.tagVehicleClassID || String(vrn.npciVehicleClassID || '4'),
+      npciVehicleClassID: vrn.npciVehicleClassID || '4',
+      vehicleType: vrn.vehicleType || '',
+      vehicleDescriptor: vrn.vehicleDescriptor || 'PETROL',
+      isNationalPermit: vrn.isNationalPermit || '2',
+      permitExpiryDate: vrn.permitExpiryDate || '',
+      stateOfRegistration: vrn.stateOfRegistration || '',
+      rechargeAmount: vrn.rechargeAmount || '0',
+      securityDeposit: vrn.securityDeposit || '0',
+      tagCost: vrn.tagCost || '0',
+    }))
+  }
+
+  // Fetch vehicle makes from Bajaj API
+  const fetchMakes = async () => {
+    setLoadingMakes(true)
+    try {
+      const res = await getVehicleMake({ mobileNo: vehicleForm.mobileNo })
+      const data = res.data?.vehicleMakeData?.vehicleMakerList || res.data?.vehicleMakerList || []
+      setMakeList(Array.isArray(data) ? data : [])
+    } catch { setMakeList([]) }
+    finally { setLoadingMakes(false) }
+  }
+
+  // Fetch vehicle models for a selected maker
+  const fetchModels = async (maker) => {
+    if (!maker) return
+    setLoadingModels(true)
+    try {
+      const res = await getVehicleModel({ mobileNo: vehicleForm.mobileNo, vehicleMake: maker, includePricingDetails: true })
+      const data = res.data?.vehicleModelData?.modelList || res.data?.modelList || []
+      setModelList(Array.isArray(data) ? data : [])
+      // If pricing details come with it, update amounts
+      const pricing = res.data?.vehicleModelData?.pricingDetails || res.data?.pricingDetails
+      if (pricing) {
+        setVehEdit(f => ({
+          ...f,
+          rechargeAmount: String(pricing.rechargeAmount || '0'),
+          securityDeposit: String(pricing.securityDeposit || '0'),
+          tagCost: String(pricing.tagCost || '0'),
+        }))
+      }
+    } catch { setModelList([]) }
+    finally { setLoadingModels(false) }
+  }
+
+  // Check if critical fields are missing (Vahan failed or incomplete)
+  const hasIncompleteVehicleDetails = () => {
+    return !vehEdit.vehicleManuf || !vehEdit.model || !vehEdit.vehicleColour || !vehEdit.vehicleDescriptor || !vehEdit.stateOfRegistration
+  }
 
   // ── STEP 1: Send OTP ──────────────────────────────────────────────────
   const handleSendOtp = async () => {
@@ -146,6 +221,8 @@ export default function Registration() {
       setVahanSuccess(res.data?.vahanSuccess === true)
       setVehicleDetails(resp.vrnDetails)
       setCustDetails(resp.custDetails)
+      prefillVehEdit(resp.vrnDetails)
+      if (res.data?.vahanSuccess !== true) fetchMakes()
       const walletExists = resp.custDetails?.walletStatus && resp.custDetails?.walletStatus !== 'NE'
       setNeedsWallet(!walletExists)
       toast.success('OTP verified!')
@@ -183,6 +260,8 @@ export default function Registration() {
       setVahanSuccess(res.data?.vahanSuccess === true)
       setVehicleDetails(resp.vrnDetails)
       setCustDetails(resp.custDetails)
+      prefillVehEdit(resp.vrnDetails)
+      if (res.data?.vahanSuccess !== true) fetchMakes()
       const walletExists = resp.custDetails?.walletStatus && resp.custDetails?.walletStatus !== 'NE'
       setNeedsWallet(!walletExists)
       toast.success('OTP verified!')
@@ -276,6 +355,11 @@ export default function Registration() {
 
   const handleRegisterTag = async () => {
     if (!selectedTag) { toast.error('Please select a tag'); return }
+    // Validate critical fields before calling Bajaj API
+    if (!vehEdit.vehicleManuf || !vehEdit.model) { toast.error('Please fill Vehicle Manufacturer and Model'); return }
+    if (!vehEdit.vehicleColour) { toast.error('Please fill Vehicle Colour'); return }
+    if (!vehEdit.vehicleDescriptor) { toast.error('Please select Fuel Type'); return }
+    if (!vehEdit.stateOfRegistration) { toast.error('Please fill State of Registration'); return }
     setLoading(true)
     try {
       const res = await registerFastag({
@@ -283,25 +367,23 @@ export default function Registration() {
         vrn: vehicleDetails?.vehicleNo || vehicleForm.vehicleNo,
         chassis: vehicleDetails?.chassisNo || vehicleForm.chassisNo,
         engine: vehicleDetails?.engineNo || vehicleForm.engineNo,
-        vehicleManuf: vehicleDetails?.vehicleManuf || '',
-        model: vehicleDetails?.model || '',
-        vehicleColour: vehicleDetails?.vehicleColour || '',
-        type: vehicleDetails?.type || '',
-        status: vehicleDetails?.status || '',
-        npciStatus: vehicleDetails?.npciStatus || '',
-        isCommercial: typeof vehicleDetails?.isCommercial === 'string'
-          ? vehicleDetails.isCommercial.toLowerCase() === 'true'
-          : !!vehicleDetails?.isCommercial,
-        tagVehicleClassID: vehicleDetails?.tagVehicleClassID || vehicleForm.vehicleCategory,
-        npciVehicleClassID: vehicleDetails?.npciVehicleClassID || vehicleForm.vehicleCategory,
-        vehicleType: vehicleDetails?.vehicleType || '',
-        rechargeAmount: vehicleDetails?.rechargeAmount || '0',
-        securityDeposit: vehicleDetails?.securityDeposit || '0',
-        tagCost: vehicleDetails?.tagCost || '0',
-        vehicleDescriptor: vehicleDetails?.vehicleDescriptor || '',
-        isNationalPermit: vehicleDetails?.isNationalPermit || '0',
-        permitExpiryDate: vehicleDetails?.permitExpiryDate || '',
-        stateOfRegistration: vehicleDetails?.stateOfRegistration || '',
+        vehicleManuf: vehEdit.vehicleManuf,
+        model: vehEdit.model,
+        vehicleColour: vehEdit.vehicleColour,
+        type: vehEdit.type || vehicleForm.vehicleCategory || 'VC4',
+        status: vehEdit.status || 'ACTIVE',
+        npciStatus: vehEdit.npciStatus || 'ACTIVE',
+        isCommercial: vehEdit.isCommercial,
+        tagVehicleClassID: vehEdit.tagVehicleClassID || '4',
+        npciVehicleClassID: vehEdit.npciVehicleClassID || '4',
+        vehicleType: vehEdit.vehicleType || '',
+        rechargeAmount: vehEdit.rechargeAmount || '0',
+        securityDeposit: vehEdit.securityDeposit || '0',
+        tagCost: vehEdit.tagCost || '0',
+        vehicleDescriptor: vehEdit.vehicleDescriptor,
+        isNationalPermit: vehEdit.isNationalPermit || '2',
+        permitExpiryDate: vehEdit.permitExpiryDate || '',
+        stateOfRegistration: vehEdit.stateOfRegistration,
         custName: custDetails?.name || '',
         custMobileNo: vehicleForm.mobileNo,
         walletId: custDetails?.walletId || '',
@@ -326,6 +408,8 @@ export default function Registration() {
     setSessionId(''); setOtpDigits(['','','','','','']); setVehicleDetails(null); setCustDetails(null); setVahanSuccess(false)
     setNeedsWallet(false); setKycForm({ name: '', lastName: '', dob: '', docType: '1', docNo: '', expiryDate: '' })
     setUploads({}); setUploadProgress({}); setAgentTags([]); setSelectedTag(null); setTagResult(null)
+    setVehEdit({ vehicleManuf: '', model: '', vehicleColour: '', type: '', status: 'ACTIVE', npciStatus: 'ACTIVE', isCommercial: false, tagVehicleClassID: '4', npciVehicleClassID: '4', vehicleType: '', vehicleDescriptor: 'PETROL', isNationalPermit: '2', permitExpiryDate: '', stateOfRegistration: '', rechargeAmount: '0', securityDeposit: '0', tagCost: '0' })
+    setMakeList([]); setModelList([])
   }
 
   return (
@@ -509,7 +593,110 @@ export default function Registration() {
           {step === 5 && (
             <motion.div key="s5" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <h2 className="text-lg font-semibold text-gray-900 mb-1">Assign FASTag</h2>
-              <p className="text-gray-500 text-sm mb-5">Select a tag from your inventory to assign</p>
+              <p className="text-gray-500 text-sm mb-5">Review vehicle details, select a tag, and activate</p>
+
+              {/* ── Vehicle Details Review / Edit ── */}
+              {hasIncompleteVehicleDetails() && (
+                <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-sm">
+                  <AlertCircle size={14} className="text-amber-600" />
+                  <span className="text-amber-700">Vehicle details incomplete — please fill the missing fields below</span>
+                </div>
+              )}
+              <details open={hasIncompleteVehicleDetails()} className="mb-5 border border-gray-200 rounded-xl overflow-hidden">
+                <summary className="px-4 py-3 bg-gray-50 cursor-pointer text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors flex items-center gap-2">
+                  <Car size={14} /> Vehicle Details {hasIncompleteVehicleDetails() ? <span className="text-red-500 text-xs">(* required fields missing)</span> : <span className="text-green-600 text-xs">(✓ complete)</span>}
+                </summary>
+                <div className="p-4 space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* Manufacturer */}
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Manufacturer *</label>
+                      {makeList.length > 0 ? (
+                        <select className="input-field text-sm" value={vehEdit.vehicleManuf}
+                          onChange={e => { setVehEdit(f => ({ ...f, vehicleManuf: e.target.value, model: '' })); setModelList([]); if (e.target.value) fetchModels(e.target.value) }}>
+                          <option value="">Select Manufacturer</option>
+                          {makeList.map((m, i) => <option key={i} value={typeof m === 'string' ? m : m.vehicleMake || m.name}>{typeof m === 'string' ? m : m.vehicleMake || m.name}</option>)}
+                        </select>
+                      ) : (
+                        <input className="input-field text-sm" placeholder="e.g. MARUTI" value={vehEdit.vehicleManuf}
+                          onChange={e => setVehEdit(f => ({ ...f, vehicleManuf: e.target.value.toUpperCase() }))} />
+                      )}
+                    </div>
+                    {/* Model */}
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Model *</label>
+                      {modelList.length > 0 ? (
+                        <select className="input-field text-sm" value={vehEdit.model}
+                          onChange={e => setVehEdit(f => ({ ...f, model: e.target.value }))}>
+                          <option value="">Select Model</option>
+                          {modelList.map((m, i) => <option key={i} value={typeof m === 'string' ? m : m.model || m.name}>{typeof m === 'string' ? m : m.model || m.name}</option>)}
+                        </select>
+                      ) : (
+                        <input className="input-field text-sm" placeholder="e.g. SWIFT" value={vehEdit.model}
+                          onChange={e => setVehEdit(f => ({ ...f, model: e.target.value.toUpperCase() }))} />
+                      )}
+                    </div>
+                    {/* Colour */}
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Colour *</label>
+                      <input className="input-field text-sm" placeholder="e.g. WHITE" value={vehEdit.vehicleColour}
+                        onChange={e => setVehEdit(f => ({ ...f, vehicleColour: e.target.value.toUpperCase() }))} />
+                    </div>
+                    {/* Fuel Type */}
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Fuel Type *</label>
+                      <select className="input-field text-sm" value={vehEdit.vehicleDescriptor}
+                        onChange={e => setVehEdit(f => ({ ...f, vehicleDescriptor: e.target.value }))}>
+                        <option value="">Select</option>
+                        <option value="PETROL">Petrol</option>
+                        <option value="DIESEL">Diesel</option>
+                        <option value="CNG">CNG</option>
+                        <option value="ELECTRIC">Electric</option>
+                        <option value="LPG">LPG</option>
+                      </select>
+                    </div>
+                    {/* State of Registration */}
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">State of Registration *</label>
+                      <input className="input-field text-sm" placeholder="e.g. MAHARASHTRA" value={vehEdit.stateOfRegistration}
+                        onChange={e => setVehEdit(f => ({ ...f, stateOfRegistration: e.target.value.toUpperCase() }))} />
+                    </div>
+                    {/* Vehicle Type */}
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Vehicle Type</label>
+                      <input className="input-field text-sm" placeholder="e.g. Motor Car" value={vehEdit.vehicleType}
+                        onChange={e => setVehEdit(f => ({ ...f, vehicleType: e.target.value }))} />
+                    </div>
+                    {/* Is Commercial */}
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Commercial Vehicle</label>
+                      <select className="input-field text-sm" value={vehEdit.isCommercial ? 'true' : 'false'}
+                        onChange={e => setVehEdit(f => ({ ...f, isCommercial: e.target.value === 'true' }))}>
+                        <option value="false">No (Private)</option>
+                        <option value="true">Yes (Commercial)</option>
+                      </select>
+                    </div>
+                    {/* National Permit */}
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">National Permit</label>
+                      <select className="input-field text-sm" value={vehEdit.isNationalPermit}
+                        onChange={e => setVehEdit(f => ({ ...f, isNationalPermit: e.target.value }))}>
+                        <option value="2">No</option>
+                        <option value="1">Yes</option>
+                      </select>
+                    </div>
+                    {vehEdit.isNationalPermit === '1' && (
+                      <div>
+                        <label className="text-xs text-gray-500 mb-1 block">Permit Expiry (DD/MM/YYYY)</label>
+                        <input className="input-field text-sm" placeholder="DD/MM/YYYY" value={vehEdit.permitExpiryDate}
+                          onChange={e => setVehEdit(f => ({ ...f, permitExpiryDate: e.target.value }))} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </details>
+
+              {/* ── Tag Selection ── */}
               {agentTags.length === 0
                 ? <div className="text-center py-12 text-gray-400">
                     <Tag size={40} className="mx-auto mb-3 text-gray-300" />

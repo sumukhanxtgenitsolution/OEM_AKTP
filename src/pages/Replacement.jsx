@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { RefreshCw, Phone, ChevronRight, Loader2, CheckCircle, AlertCircle, Tag } from 'lucide-react'
+import { RefreshCw, Phone, ChevronRight, Loader2, CheckCircle, AlertCircle, Tag, Car } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext'
 import { sendOtpReplacement, validateOtpReplacement, replaceTag, getBajajTags } from '../services/api'
@@ -34,6 +34,12 @@ export default function Replacement() {
   const [agentTags, setAgentTags] = useState([])
   const [selectedTag, setSelectedTag] = useState(null)
   const [result, setResult] = useState(null)
+
+  // Editable fields for replacement (may be missing from Vahan)
+  const [repEdit, setRepEdit] = useState({
+    chassisNo: '', engineNo: '', stateOfRegistration: '',
+    vehicleDescriptor: 'PETROL', isNationalPermit: '2', permitExpiryDate: '', repTagCost: '0',
+  })
 
   const handleSendOtp = async () => {
     if (!form.vehicleNo) { toast.error('Enter vehicle number'); return }
@@ -71,6 +77,18 @@ export default function Replacement() {
       if (!resp) throw new Error(res.data?.response?.errorDesc || 'OTP validation failed')
       setVehicleDetails(resp.vrnDetails)
       setCustDetails(resp.custDetails)
+      // Pre-fill editable replacement fields from Vahan
+      const vrn = resp.vrnDetails || {}
+      setRepEdit(prev => ({
+        ...prev,
+        chassisNo: vrn.chassisNo || '',
+        engineNo: vrn.engineNo || '',
+        stateOfRegistration: vrn.stateOfRegistration || '',
+        vehicleDescriptor: vrn.vehicleDescriptor || 'PETROL',
+        isNationalPermit: vrn.isNationalPermit || '2',
+        permitExpiryDate: vrn.permitExpiryDate || '',
+        repTagCost: String(vrn.repTagCost || '0'),
+      }))
       toast.success('OTP verified!')
       setStep(3)
       const tagRes = await getBajajTags()
@@ -84,6 +102,10 @@ export default function Replacement() {
   const handleReplace = async () => {
     if (!selectedTag) { toast.error('Select a replacement tag'); return }
     if (reason === '99' && !reasonDesc) { toast.error('Enter reason description'); return }
+    if (!repEdit.chassisNo) { toast.error('Please fill Chassis Number'); return }
+    if (!repEdit.engineNo) { toast.error('Please fill Engine Number'); return }
+    if (!repEdit.stateOfRegistration) { toast.error('Please fill State of Registration'); return }
+    if (!repEdit.vehicleDescriptor) { toast.error('Please select Fuel Type'); return }
     setLoading(true)
     try {
       const res = await replaceTag({
@@ -92,13 +114,13 @@ export default function Replacement() {
         serialNo: selectedTag.kitNo || selectedTag.serialNo,
         reason,
         ...(reason === '99' ? { reasonDesc } : {}),
-        repTagCost: String(vehicleDetails?.repTagCost || '0'),
-        chassisNo: vehicleDetails?.chassisNo || '',
-        engineNo: vehicleDetails?.engineNo || '',
-        isNationalPermit: vehicleDetails?.isNationalPermit || '0',
-        permitExpiryDate: vehicleDetails?.permitExpiryDate || '',
-        stateOfRegistration: vehicleDetails?.stateOfRegistration || '',
-        vehicleDescriptor: vehicleDetails?.vehicleDescriptor || '',
+        repTagCost: repEdit.repTagCost || String(vehicleDetails?.repTagCost || '0'),
+        chassisNo: repEdit.chassisNo,
+        engineNo: repEdit.engineNo,
+        isNationalPermit: repEdit.isNationalPermit || '2',
+        permitExpiryDate: repEdit.permitExpiryDate || '',
+        stateOfRegistration: repEdit.stateOfRegistration,
+        vehicleDescriptor: repEdit.vehicleDescriptor,
       })
       if (!res.data?.success) throw new Error(res.data?.message || res.data?.response?.errorDesc || 'Replacement failed')
       const r = res.data?.APIResponse?.tagReplaceResp || res.data?.APIResponse || res.data
@@ -114,6 +136,7 @@ export default function Replacement() {
     setStep(1); setForm({ vehicleNo: '', mobileNo: '', walletId: '' })
     setSessionId(''); setOtpDigits(['','','','','','']); setVehicleDetails(null)
     setCustDetails(null); setReason('1'); setReasonDesc(''); setSelectedTag(null); setResult(null)
+    setRepEdit({ chassisNo: '', engineNo: '', stateOfRegistration: '', vehicleDescriptor: 'PETROL', isNationalPermit: '2', permitExpiryDate: '', repTagCost: '0' })
   }
 
   return (
@@ -184,6 +207,61 @@ export default function Replacement() {
                   <p className="text-gray-500 mt-1">{vehicleDetails.vehicleManuf} {vehicleDetails.model}</p>
                 </div>
               )}
+
+              {/* Editable vehicle fields for replacement */}
+              <details open={!repEdit.chassisNo || !repEdit.engineNo || !repEdit.stateOfRegistration} className="mb-5">
+                <summary className="flex items-center gap-2 text-sm font-semibold text-gray-800 cursor-pointer select-none">
+                  <Car size={16} className="text-red-500" /> Vehicle Details for Replacement
+                  {(!repEdit.chassisNo || !repEdit.engineNo || !repEdit.stateOfRegistration) && (
+                    <span className="ml-2 text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">Fill missing fields</span>
+                  )}
+                </summary>
+                <div className="grid grid-cols-2 gap-3 mt-3">
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block">Chassis No *</label>
+                    <input className="input-field" value={repEdit.chassisNo}
+                      onChange={e => setRepEdit(p => ({ ...p, chassisNo: e.target.value.toUpperCase() }))} placeholder="Chassis number" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block">Engine No *</label>
+                    <input className="input-field" value={repEdit.engineNo}
+                      onChange={e => setRepEdit(p => ({ ...p, engineNo: e.target.value.toUpperCase() }))} placeholder="Engine number" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block">State of Registration *</label>
+                    <input className="input-field" value={repEdit.stateOfRegistration}
+                      onChange={e => setRepEdit(p => ({ ...p, stateOfRegistration: e.target.value.toUpperCase() }))} placeholder="e.g. KA, MH, DL" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block">Fuel Type *</label>
+                    <select className="input-field" value={repEdit.vehicleDescriptor}
+                      onChange={e => setRepEdit(p => ({ ...p, vehicleDescriptor: e.target.value }))}>
+                      <option value="PETROL">Petrol</option>
+                      <option value="DIESEL">Diesel</option>
+                      <option value="CNG">CNG</option>
+                      <option value="LPG">LPG</option>
+                      <option value="ELECTRIC">Electric</option>
+                      <option value="HYBRID">Hybrid</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block">National Permit</label>
+                    <select className="input-field" value={repEdit.isNationalPermit}
+                      onChange={e => setRepEdit(p => ({ ...p, isNationalPermit: e.target.value }))}>
+                      <option value="2">No</option>
+                      <option value="1">Yes</option>
+                    </select>
+                  </div>
+                  {repEdit.isNationalPermit === '1' && (
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Permit Expiry Date</label>
+                      <input type="date" className="input-field" value={repEdit.permitExpiryDate}
+                        onChange={e => setRepEdit(p => ({ ...p, permitExpiryDate: e.target.value }))} />
+                    </div>
+                  )}
+                </div>
+              </details>
+
               <div className="mb-4">
                 <label className="text-sm text-gray-600 mb-2 block">Reason for Replacement *</label>
                 <select className="input-field" value={reason} onChange={e => setReason(e.target.value)}>
