@@ -279,6 +279,7 @@ export default function Registration() {
     setLoading(true)
     try {
       const res = await registerFastag({
+        isChassis: mode === 'chassis' ? 1 : 0,
         vrn: vehicleDetails?.vehicleNo || vehicleForm.vehicleNo,
         chassis: vehicleDetails?.chassisNo || vehicleForm.chassisNo,
         engine: vehicleDetails?.engineNo || vehicleForm.engineNo,
