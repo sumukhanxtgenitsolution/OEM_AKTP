@@ -99,9 +99,9 @@ export default function Registration() {
 
   // Vehicle details edit form (for when Vahan fails / fields are incomplete)
   const [vehEdit, setVehEdit] = useState({
-    vehicleManuf: '', model: '', vehicleColour: '', type: '', status: 'ACTIVE',
+    vehicleManuf: '', model: '', vehicleColour: '', type: 'VC4', status: 'ACTIVE',
     npciStatus: 'ACTIVE', isCommercial: false, tagVehicleClassID: '4', npciVehicleClassID: '4',
-    vehicleType: '', vehicleDescriptor: 'PETROL', isNationalPermit: '2', permitExpiryDate: '',
+    vehicleType: 'Motor Car', vehicleDescriptor: 'PETROL', isNationalPermit: '2', permitExpiryDate: '',
     stateOfRegistration: '', rechargeAmount: '0', securityDeposit: '0', tagCost: '0',
   })
   const [makeList, setMakeList] = useState([])
@@ -408,7 +408,7 @@ export default function Registration() {
     setSessionId(''); setOtpDigits(['','','','','','']); setVehicleDetails(null); setCustDetails(null); setVahanSuccess(false)
     setNeedsWallet(false); setKycForm({ name: '', lastName: '', dob: '', docType: '1', docNo: '', expiryDate: '' })
     setUploads({}); setUploadProgress({}); setAgentTags([]); setSelectedTag(null); setTagResult(null)
-    setVehEdit({ vehicleManuf: '', model: '', vehicleColour: '', type: '', status: 'ACTIVE', npciStatus: 'ACTIVE', isCommercial: false, tagVehicleClassID: '4', npciVehicleClassID: '4', vehicleType: '', vehicleDescriptor: 'PETROL', isNationalPermit: '2', permitExpiryDate: '', stateOfRegistration: '', rechargeAmount: '0', securityDeposit: '0', tagCost: '0' })
+    setVehEdit({ vehicleManuf: '', model: '', vehicleColour: '', type: 'VC4', status: 'ACTIVE', npciStatus: 'ACTIVE', isCommercial: false, tagVehicleClassID: '4', npciVehicleClassID: '4', vehicleType: 'Motor Car', vehicleDescriptor: 'PETROL', isNationalPermit: '2', permitExpiryDate: '', stateOfRegistration: '', rechargeAmount: '0', securityDeposit: '0', tagCost: '0' })
     setMakeList([]); setModelList([])
   }
 
