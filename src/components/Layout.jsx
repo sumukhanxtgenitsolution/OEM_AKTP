@@ -3,7 +3,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, Car, RefreshCw, Package,
-  BarChart2, User, LogOut, Menu, X, ChevronRight, Zap, Tag
+  BarChart2, User, LogOut, Menu, X, ChevronRight, Tag
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
@@ -36,9 +36,7 @@ export default function Layout() {
         {/* Logo */}
         <div className="p-6 border-b border-gray-100">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center red-glow">
-              <Zap className="w-5 h-5 text-white" fill="currentColor" />
-            </div>
+            <img src="/Logo.png" alt="AK Toll Park" className="w-10 h-10 object-contain" />
             <div>
               <p className="font-display font-bold text-gray-900 text-sm leading-tight">AK Toll Park</p>
               <p className="text-red-500 text-xs font-medium">OEM Portal</p>
@@ -126,9 +124,7 @@ export default function Layout() {
           >
             <div className="p-4 border-b border-gray-100 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-red-600 rounded-xl flex items-center justify-center">
-                  <Zap className="w-4.5 h-4.5 text-white" size={18} fill="currentColor" />
-                </div>
+                <img src="/Logo.png" alt="AK Toll Park" className="w-9 h-9 object-contain" />
                 <div>
                   <p className="font-display font-bold text-gray-900 text-sm">AK Toll Park</p>
                   <p className="text-red-500 text-xs">OEM Portal</p>
