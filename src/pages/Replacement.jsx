@@ -4,6 +4,8 @@ import { RefreshCw, Phone, ChevronRight, Loader2, CheckCircle, AlertCircle, Tag,
 import toast from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext'
 import { sendOtpReplacement, validateOtpReplacement, replaceTag, getBajajTags } from '../services/api'
+import SearchableSelect from '../components/SearchableSelect'
+import { INDIAN_STATES, FUEL_TYPES } from '../constants/vehicleData'
 
 const REASONS = [
   { id: '1', label: 'Tag Damaged' },
@@ -38,7 +40,7 @@ export default function Replacement() {
   // Editable fields for replacement (may be missing from Vahan)
   const [repEdit, setRepEdit] = useState({
     chassisNo: '', engineNo: '', stateOfRegistration: '',
-    vehicleDescriptor: 'PETROL', isNationalPermit: '2', permitExpiryDate: '', repTagCost: '0',
+    vehicleDescriptor: '', isNationalPermit: '2', permitExpiryDate: '', repTagCost: '0',
   })
 
   const handleSendOtp = async () => {
@@ -84,7 +86,7 @@ export default function Replacement() {
         chassisNo: vrn.chassisNo || '',
         engineNo: vrn.engineNo || '',
         stateOfRegistration: vrn.stateOfRegistration || '',
-        vehicleDescriptor: vrn.vehicleDescriptor || 'PETROL',
+        vehicleDescriptor: vrn.vehicleDescriptor || '',
         isNationalPermit: vrn.isNationalPermit || '2',
         permitExpiryDate: vrn.permitExpiryDate || '',
         repTagCost: String(vrn.repTagCost || '0'),
@@ -136,7 +138,7 @@ export default function Replacement() {
     setStep(1); setForm({ vehicleNo: '', mobileNo: '', walletId: '' })
     setSessionId(''); setOtpDigits(['','','','','','']); setVehicleDetails(null)
     setCustDetails(null); setReason('1'); setReasonDesc(''); setSelectedTag(null); setResult(null)
-    setRepEdit({ chassisNo: '', engineNo: '', stateOfRegistration: '', vehicleDescriptor: 'PETROL', isNationalPermit: '2', permitExpiryDate: '', repTagCost: '0' })
+    setRepEdit({ chassisNo: '', engineNo: '', stateOfRegistration: '', vehicleDescriptor: '', isNationalPermit: '2', permitExpiryDate: '', repTagCost: '0' })
   }
 
   return (
@@ -209,56 +211,59 @@ export default function Replacement() {
               )}
 
               {/* Editable vehicle fields for replacement */}
-              <details open={!repEdit.chassisNo || !repEdit.engineNo || !repEdit.stateOfRegistration} className="mb-5">
-                <summary className="flex items-center gap-2 text-sm font-semibold text-gray-800 cursor-pointer select-none">
-                  <Car size={16} className="text-red-500" /> Vehicle Details for Replacement
-                  {(!repEdit.chassisNo || !repEdit.engineNo || !repEdit.stateOfRegistration) && (
+              <details open={!repEdit.chassisNo || !repEdit.engineNo || !repEdit.stateOfRegistration || !repEdit.vehicleDescriptor} className="mb-5 border border-gray-200 rounded-xl overflow-hidden">
+                <summary className="px-4 py-3 bg-gray-50 cursor-pointer text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors flex items-center gap-2 select-none">
+                  <Car size={14} className="text-red-500" /> Vehicle Details for Replacement
+                  {(!repEdit.chassisNo || !repEdit.engineNo || !repEdit.stateOfRegistration || !repEdit.vehicleDescriptor) ? (
                     <span className="ml-2 text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">Fill missing fields</span>
+                  ) : (
+                    <span className="ml-2 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full border border-green-200">✓ complete</span>
                   )}
                 </summary>
-                <div className="grid grid-cols-2 gap-3 mt-3">
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">Chassis No *</label>
-                    <input className="input-field" value={repEdit.chassisNo}
-                      onChange={e => setRepEdit(p => ({ ...p, chassisNo: e.target.value.toUpperCase() }))} placeholder="Chassis number" />
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">Engine No *</label>
-                    <input className="input-field" value={repEdit.engineNo}
-                      onChange={e => setRepEdit(p => ({ ...p, engineNo: e.target.value.toUpperCase() }))} placeholder="Engine number" />
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">State of Registration *</label>
-                    <input className="input-field" value={repEdit.stateOfRegistration}
-                      onChange={e => setRepEdit(p => ({ ...p, stateOfRegistration: e.target.value.toUpperCase() }))} placeholder="e.g. KA, MH, DL" />
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">Fuel Type *</label>
-                    <select className="input-field" value={repEdit.vehicleDescriptor}
-                      onChange={e => setRepEdit(p => ({ ...p, vehicleDescriptor: e.target.value }))}>
-                      <option value="PETROL">Petrol</option>
-                      <option value="DIESEL">Diesel</option>
-                      <option value="CNG">CNG</option>
-                      <option value="LPG">LPG</option>
-                      <option value="ELECTRIC">Electric</option>
-                      <option value="HYBRID">Hybrid</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">National Permit</label>
-                    <select className="input-field" value={repEdit.isNationalPermit}
-                      onChange={e => setRepEdit(p => ({ ...p, isNationalPermit: e.target.value }))}>
-                      <option value="2">No</option>
-                      <option value="1">Yes</option>
-                    </select>
-                  </div>
-                  {repEdit.isNationalPermit === '1' && (
+                <div className="p-4">
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs text-gray-500 mb-1 block">Permit Expiry Date</label>
-                      <input type="date" className="input-field" value={repEdit.permitExpiryDate}
-                        onChange={e => setRepEdit(p => ({ ...p, permitExpiryDate: e.target.value }))} />
+                      <label className="text-xs text-gray-500 mb-1 block">Chassis No *</label>
+                      <input className="input-field text-sm" value={repEdit.chassisNo}
+                        onChange={e => setRepEdit(p => ({ ...p, chassisNo: e.target.value.toUpperCase() }))} placeholder="Chassis number" />
                     </div>
-                  )}
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Engine No *</label>
+                      <input className="input-field text-sm" value={repEdit.engineNo}
+                        onChange={e => setRepEdit(p => ({ ...p, engineNo: e.target.value.toUpperCase() }))} placeholder="Engine number" />
+                    </div>
+                    {/* State of Registration — searchable dropdown */}
+                    <SearchableSelect
+                      label="State of Registration" required
+                      placeholder="Search state..."
+                      options={INDIAN_STATES}
+                      value={repEdit.stateOfRegistration}
+                      onChange={v => setRepEdit(p => ({ ...p, stateOfRegistration: v }))}
+                    />
+                    {/* Fuel Type — searchable, no default */}
+                    <SearchableSelect
+                      label="Fuel Type" required
+                      placeholder="Select fuel type..."
+                      options={FUEL_TYPES}
+                      value={repEdit.vehicleDescriptor}
+                      onChange={v => setRepEdit(p => ({ ...p, vehicleDescriptor: v }))}
+                    />
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">National Permit</label>
+                      <select className="input-field text-sm" value={repEdit.isNationalPermit}
+                        onChange={e => setRepEdit(p => ({ ...p, isNationalPermit: e.target.value }))}>
+                        <option value="2">No</option>
+                        <option value="1">Yes</option>
+                      </select>
+                    </div>
+                    {repEdit.isNationalPermit === '1' && (
+                      <div>
+                        <label className="text-xs text-gray-500 mb-1 block">Permit Expiry Date</label>
+                        <input type="date" className="input-field text-sm" value={repEdit.permitExpiryDate}
+                          onChange={e => setRepEdit(p => ({ ...p, permitExpiryDate: e.target.value }))} />
+                      </div>
+                    )}
+                  </div>
                 </div>
               </details>
 
