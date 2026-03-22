@@ -88,6 +88,10 @@ export const validateOtpReplacement = (payload) =>
 export const getSaleReport = (payload) =>
   api.post('/api/report/sale-report', payload)
 
+// ============ STATUS CHECKS ============
+export const checkTagRegistrationStatus = (payload) =>
+  api.post('/api/bajaj/customer/tag-registration-status', payload)
+
 // ============ PROFILE ============
 export const getAgentProfile = () =>
   api.get('/api/agent/profile')

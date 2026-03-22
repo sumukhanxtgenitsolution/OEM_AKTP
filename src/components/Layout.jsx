@@ -3,7 +3,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, Car, RefreshCw, Package,
-  BarChart2, User, LogOut, Menu, X, ChevronRight, Zap
+  BarChart2, User, LogOut, Menu, X, ChevronRight, Zap, Tag
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
@@ -14,6 +14,7 @@ const navItems = [
   { to: '/replacement', icon: RefreshCw, label: 'Replacement' },
   { to: '/inventory', icon: Package, label: 'Tag Inventory' },
   { to: '/reports', icon: BarChart2, label: 'Reports' },
+  { to: '/tag-reg-status', icon: Tag, label: 'Tag Reg Status' },
   { to: '/profile', icon: User, label: 'Profile' },
 ]
 
