@@ -2,14 +2,15 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Car, Hash, Phone, User, ChevronRight, ChevronLeft,
-  CheckCircle, Upload, Tag, Loader2, AlertCircle, X, CreditCard
+  CheckCircle, Upload, Tag, Loader2, AlertCircle, X, CreditCard, FileText
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext'
 import {
   sendOtp, validateOtp, createWallet,
   uploadDocument, registerFastag,
-  getBajajTags, getVehicleMake, getVehicleModel
+  getBajajTags, getVehicleMake, getVehicleModel,
+  downloadFitmentCertificate
 } from '../services/api'
 import SearchableSelect from '../components/SearchableSelect'
 import { INDIAN_STATES, VEHICLE_COLOURS, FUEL_TYPES, VEHICLE_TYPES } from '../constants/vehicleData'
@@ -98,6 +99,7 @@ export default function Registration() {
   const [agentTags, setAgentTags] = useState([])
   const [selectedTag, setSelectedTag] = useState(null)
   const [tagResult, setTagResult] = useState(null)
+  const [certDownloading, setCertDownloading] = useState(false)
 
   // Vehicle details edit form (for when Vahan fails / fields are incomplete)
   const [vehEdit, setVehEdit] = useState({
@@ -748,6 +750,35 @@ export default function Registration() {
                       <span className="text-gray-800">₹{tagResult.agentBalance || '0'}</span>
                     </div>
                   </div>
+                )}
+                {(tagResult?.serialNo || selectedTag?.kitNo) && (
+                  <button
+                    className="flex items-center justify-center gap-2 w-full mb-3 py-2.5 px-4 border-2 border-red-600 text-red-600 rounded-xl font-medium text-sm hover:bg-red-50 transition-colors disabled:opacity-50"
+                    disabled={certDownloading}
+                    onClick={async () => {
+                      const sn = tagResult?.serialNo || selectedTag?.kitNo
+                      setCertDownloading(true)
+                      try {
+                        const res = await downloadFitmentCertificate(sn)
+                        const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
+                        const link = document.createElement('a')
+                        link.href = url
+                        link.setAttribute('download', `fitment_${tagResult?.vrn || vehicleDetails?.vehicleNo || sn}.pdf`)
+                        document.body.appendChild(link)
+                        link.click()
+                        link.remove()
+                        window.URL.revokeObjectURL(url)
+                        toast.success('Certificate downloaded')
+                      } catch (e) {
+                        toast.error(e?.response?.data?.message || 'Download failed')
+                      } finally {
+                        setCertDownloading(false)
+                      }
+                    }}
+                  >
+                    {certDownloading ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} />}
+                    Download Fitment Certificate
+                  </button>
                 )}
                 <button className="btn-primary w-full" onClick={handleReset}>
                   + New Registration

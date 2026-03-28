@@ -102,4 +102,11 @@ export const getAgentProfile = () =>
 export const changePassword = (payload) =>
   api.post('/api/agent/change-password', payload)
 
+// ============ FITMENT CERTIFICATE & ACTIVATIONS ============
+export const getMyActivations = (params) =>
+  api.get('/api/bajaj/my-activations', { params })
+
+export const downloadFitmentCertificate = (serialNo) =>
+  api.get(`/api/bajaj/fitment-certificate/${serialNo}`, { responseType: 'blob' })
+
 export default api

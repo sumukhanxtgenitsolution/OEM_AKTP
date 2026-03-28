@@ -11,6 +11,7 @@ import TagRegStatus from './pages/TagRegStatus'
 import Inventory from './pages/Inventory'
 import Reports from './pages/Reports'
 import Profile from './pages/Profile'
+import Certificates from './pages/Certificates'
 
 export default function App() {
   return (
@@ -38,6 +39,7 @@ export default function App() {
             <Route path="replacement" element={<TagReplacement />} />
             <Route path="inventory" element={<Inventory />} />
             <Route path="reports" element={<Reports />} />          <Route path="tag-reg-status" element={<TagRegStatus />} />            <Route path="profile" element={<Profile />} />
+            <Route path="certificates" element={<Certificates />} />
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
