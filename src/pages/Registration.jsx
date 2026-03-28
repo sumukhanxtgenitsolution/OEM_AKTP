@@ -394,7 +394,8 @@ export default function Registration() {
         walletId: custDetails?.walletId || '',
         serialNo: selectedTag.kitNo || selectedTag.serialNo,
         tid: selectedTag.tid || '',
-        custId: custDetails?.custId || ''
+        custId: custDetails?.custId || '',
+        source: 'oem_portal',
       })
       if (!res.data?.success) throw new Error(res.data?.message || res.data?.response?.errorDesc || 'Registration failed')
       const result = res.data?.decryptedResponse?.tagRegistrationResp || res.data?.decryptedResponse || res.data
