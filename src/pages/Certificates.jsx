@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import {
   FileText, Search, Download, Loader2, AlertCircle,
-  ChevronLeft, ChevronRight, Tag, Calendar, Car
+  ChevronLeft, ChevronRight, Tag, Calendar, Car, CheckCircle2, RefreshCw
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getMyActivations, downloadFitmentCertificate } from '../services/api'
@@ -125,10 +125,10 @@ export default function Certificates() {
                     <span className="flex items-center gap-1.5"><Tag size={13} /> Tag Serial</span>
                   </th>
                   <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide pb-3 pr-4 hidden md:table-cell">TID</th>
+                  <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide pb-3 pr-4 hidden lg:table-cell">Cert ID</th>
                   <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide pb-3 pr-4 hidden sm:table-cell">
                     <span className="flex items-center gap-1.5"><Calendar size={13} /> Activated On</span>
                   </th>
-                  <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide pb-3">Bank</th>
                   <th className="pb-3" />
                 </tr>
               </thead>
@@ -159,27 +159,58 @@ export default function Certificates() {
                         {item.tid ? item.tid.slice(0, 8) + '...' : '—'}
                       </span>
                     </td>
+                    {/* Cert ID — shows stored ID + issued badge, hidden on small screens */}
+                    <td className="py-3 pr-4 hidden lg:table-cell">
+                      {item.fitmentCertId ? (
+                        <div>
+                          <span className="font-mono text-gray-700 text-[11px]">
+                            {item.fitmentCertId.length > 18
+                              ? item.fitmentCertId.slice(0, 18) + '…'
+                              : item.fitmentCertId}
+                          </span>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <CheckCircle2 size={10} className="text-green-500" />
+                            <span className="text-[10px] text-green-600 font-medium">Issued</span>
+                            {item.fitmentIssuedAt && (
+                              <span className="text-[10px] text-gray-400">
+                                · {new Date(item.fitmentIssuedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-[11px] text-gray-400">Not yet issued</span>
+                      )}
+                    </td>
                     <td className="py-3 pr-4 hidden sm:table-cell">
                       <span className="text-gray-500 text-xs">{formatDate(item.createdAt)}</span>
                     </td>
-                    <td className="py-3 pr-4">
-                      <span className="text-xs capitalize text-gray-500 bg-gray-100 rounded-lg px-2 py-1">
-                        {item.bank || 'bajaj'}
-                      </span>
-                    </td>
                     <td className="py-3">
                       {item.serialNo ? (
-                        <button
-                          onClick={() => handleDownload(item.serialNo, item.vehicleNo)}
-                          disabled={downloading === item.serialNo}
-                          className="flex items-center gap-1.5 text-xs font-medium text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg px-2.5 py-1.5 transition-colors disabled:opacity-50"
-                          title="Download Fitment Certificate"
-                        >
-                          {downloading === item.serialNo
-                            ? <Loader2 size={13} className="animate-spin" />
-                            : <Download size={13} />}
-                          <span className="hidden sm:inline">PDF</span>
-                        </button>
+                        <div className="flex flex-col items-end gap-1">
+                          <button
+                            onClick={() => handleDownload(item.serialNo, item.vehicleNo)}
+                            disabled={downloading === item.serialNo}
+                            className={`flex items-center gap-1.5 text-xs font-medium rounded-lg px-2.5 py-1.5 transition-colors disabled:opacity-50 border ${
+                              item.fitmentCertId
+                                ? 'text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 border-blue-200'
+                                : 'text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 border-red-200'
+                            }`}
+                            title={item.fitmentCertId ? 'Re-download (same cert ID)' : 'Generate & download certificate'}
+                          >
+                            {downloading === item.serialNo
+                              ? <Loader2 size={13} className="animate-spin" />
+                              : item.fitmentCertId
+                                ? <RefreshCw size={13} />
+                                : <Download size={13} />}
+                            <span className="hidden sm:inline">
+                              {item.fitmentCertId ? 'Re-download' : 'Download'}
+                            </span>
+                          </button>
+                          {item.fitmentCertId && (
+                            <span className="text-[9px] text-gray-400 pr-0.5">Same cert ID</span>
+                          )}
+                        </div>
                       ) : (
                         <span className="flex items-center gap-1 text-xs text-gray-400">
                           <AlertCircle size={13} /> N/A
