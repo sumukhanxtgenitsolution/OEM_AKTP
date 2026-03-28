@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import {
   FileText, Search, Download, Loader2, AlertCircle,
-  ChevronLeft, ChevronRight, Tag, Calendar, Car, CheckCircle2, RefreshCw
+  ChevronLeft, ChevronRight, Tag, Calendar, Car, CheckCircle2, RefreshCw, User
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getMyActivations, downloadFitmentCertificate } from '../services/api'
@@ -126,6 +126,9 @@ export default function Certificates() {
                   </th>
                   <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide pb-3 pr-4 hidden md:table-cell">TID</th>
                   <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide pb-3 pr-4 hidden lg:table-cell">Cert ID</th>
+                  <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide pb-3 pr-4 hidden xl:table-cell">
+                    <span className="flex items-center gap-1.5"><User size={13} /> Customer</span>
+                  </th>
                   <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide pb-3 pr-4 hidden sm:table-cell">
                     <span className="flex items-center gap-1.5"><Calendar size={13} /> Activated On</span>
                   </th>
@@ -181,6 +184,15 @@ export default function Certificates() {
                       ) : (
                         <span className="text-[11px] text-gray-400">Not yet issued</span>
                       )}
+                    </td>
+                    {/* Customer name + mobile — hidden below xl */}
+                    <td className="py-3 pr-4 hidden xl:table-cell">
+                      <div>
+                        <p className="text-gray-800 text-xs font-medium">{item.customerName || '\u2014'}</p>
+                        {item.mobileNo && (
+                          <p className="text-gray-400 text-[11px] font-mono mt-0.5">{item.mobileNo}</p>
+                        )}
+                      </div>
                     </td>
                     <td className="py-3 pr-4 hidden sm:table-cell">
                       <span className="text-gray-500 text-xs">{formatDate(item.createdAt)}</span>

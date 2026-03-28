@@ -196,7 +196,7 @@ export default function Registration() {
         engineNo,
         reqType: 'REG',
         resend: 0,
-        isChassis: mode === 'chassis' ? 1 : 0,
+        isChassis: mode === 'chassis' ? 1 : 2,  // 2 = OEM VRN: uses agentId 70091, skips Bajaj AI screening
         vehicleCategory: vehicleForm.vehicleCategory,
         ...(mode === 'chassis' ? { chassisNo } : { vehicleNo }),
       }
@@ -219,7 +219,7 @@ export default function Registration() {
     if (otpVal.length !== 6) { toast.error('Enter 6-digit OTP'); return }
     setLoading(true)
     try {
-      const res = await validateOtp({ validateOtpReq: { mobileNo: vehicleForm.mobileNo, otp: otpVal, sessionId, isChassis: mode === 'chassis' ? 1 : 0 } })
+      const res = await validateOtp({ validateOtpReq: { mobileNo: vehicleForm.mobileNo, otp: otpVal, sessionId, isChassis: mode === 'chassis' ? 1 : 2 } })
       const resp = res.data?.validateOtpResp
       if (!resp) throw new Error(res.data?.response?.errorDesc || 'OTP validation failed')
       setVahanSuccess(res.data?.vahanSuccess === true)
@@ -258,7 +258,7 @@ export default function Registration() {
     const otpVal = digits.join('')
     setLoading(true)
     try {
-      const res = await validateOtp({ validateOtpReq: { mobileNo: vehicleForm.mobileNo, otp: otpVal, sessionId, isChassis: mode === 'chassis' ? 1 : 0 } })
+      const res = await validateOtp({ validateOtpReq: { mobileNo: vehicleForm.mobileNo, otp: otpVal, sessionId, isChassis: mode === 'chassis' ? 1 : 2 } })
       const resp = res.data?.validateOtpResp
       if (!resp) throw new Error(res.data?.response?.errorDesc || 'OTP validation failed')
       setVahanSuccess(res.data?.vahanSuccess === true)
@@ -368,7 +368,7 @@ export default function Registration() {
     setLoading(true)
     try {
       const res = await registerFastag({
-        isChassis: mode === 'chassis' ? 1 : 0,
+        isChassis: mode === 'chassis' ? 1 : 2,  // 1=chassis, 2=OEM VRN (agentId 70091, skips AI screening)
         vrn: vehicleDetails?.vehicleNo || vehicleForm.vehicleNo,
         chassis: vehicleDetails?.chassisNo || vehicleForm.chassisNo,
         engine: vehicleDetails?.engineNo || vehicleForm.engineNo,
