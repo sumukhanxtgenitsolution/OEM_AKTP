@@ -70,6 +70,45 @@ function toBase64(file) {
   })
 }
 
+// Compress an image file to under maxSizeBytes using Canvas (JPEG output)
+// Uses binary search on quality to find the largest quality that fits
+const compressImage = (file, maxSizeBytes = 1.8 * 1024 * 1024) => {
+  return new Promise((resolve) => {
+    // If already small enough, return as-is
+    if (file.size <= maxSizeBytes) { resolve(file); return }
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+    img.onload = async () => {
+      URL.revokeObjectURL(url)
+      const canvas = document.createElement('canvas')
+      let { width, height } = img
+      // Limit max dimension to 1920px to reduce size before quality tuning
+      const MAX_DIM = 1920
+      if (width > MAX_DIM || height > MAX_DIM) {
+        if (width >= height) { height = Math.round(height * MAX_DIM / width); width = MAX_DIM }
+        else { width = Math.round(width * MAX_DIM / height); height = MAX_DIM }
+      }
+      canvas.width = width
+      canvas.height = height
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height)
+      const tryQuality = (q) => new Promise(res => canvas.toBlob(res, 'image/jpeg', q))
+      // Binary search: find highest quality whose blob is <= maxSizeBytes
+      let lo = 0.1, hi = 0.92, best = null
+      while (hi - lo > 0.04) {
+        const mid = (lo + hi) / 2
+        const blob = await tryQuality(mid)
+        if (blob && blob.size <= maxSizeBytes) { lo = mid; best = blob }
+        else hi = mid
+      }
+      if (!best) best = await tryQuality(lo)
+      const outName = file.name.replace(/\.[^.]+$/, '.jpg')
+      resolve(new File([best], outName, { type: 'image/jpeg' }))
+    }
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file) }
+    img.src = url
+  })
+}
+
 export default function Registration() {
   const { user } = useAuth()
   const [step, setStep] = useState(1)
@@ -306,7 +345,15 @@ export default function Registration() {
 
   // ── STEP 4: Upload Documents ──────────────────────────────────────────
   const getRequiredDocs = () => {
-    const isVc4 = String(vehicleDetails?.npciVehicleClassID || (vehicleForm.vehicleCategory === 'VC4' ? '4' : '0')) === '4'
+    // Per Bajaj KYV spec: use tagVehicleClassID (Bajaj internal mapper class) as
+    // the primary VC discriminator — this is what Bajaj validates uploaded docs against.
+    // Fall back to npciVehicleClassID only if tagVehicleClassID is absent.
+    const effectiveClassID = String(
+      vehicleDetails?.tagVehicleClassID ||
+      vehicleDetails?.npciVehicleClassID ||
+      (vehicleForm.vehicleCategory === 'VC4' ? '4' : '0')
+    )
+    const isVc4 = effectiveClassID === '4'
     if (isVc4 && vahanSuccess) return ['VEHICLEFRONT']
     if (isVc4 && !vahanSuccess) return ['RCFRONT', 'RCBACK', 'VEHICLEFRONT']
     return ['RCFRONT', 'RCBACK', 'VEHICLEFRONT', 'VEHICLESIDE', 'TAGAFFIX']
@@ -315,10 +362,17 @@ export default function Registration() {
   const requiredDocs = getRequiredDocs()
   const allDocsUploaded = requiredDocs.every(t => uploads[t] !== undefined)
 
-  const handleUploadFile = (imageType, file) => {
+  const handleUploadFile = async (imageType, file) => {
     if (!file) return
-    setUploads(u => ({ ...u, [imageType]: file }))
-    setUploadProgress(p => ({ ...p, [imageType]: 'done' }))
+    setUploadProgress(p => ({ ...p, [imageType]: 'uploading' }))
+    try {
+      const compressed = await compressImage(file) // ensures < 1.8 MB before upload
+      setUploads(u => ({ ...u, [imageType]: compressed }))
+      setUploadProgress(p => ({ ...p, [imageType]: 'done' }))
+    } catch {
+      setUploads(u => ({ ...u, [imageType]: file }))
+      setUploadProgress(p => ({ ...p, [imageType]: 'done' }))
+    }
   }
 
   const handleUploadAllAndContinue = async () => {
@@ -329,7 +383,8 @@ export default function Registration() {
       formData.append('mobileNo', String(vehicleForm.mobileNo || ''))
       formData.append('vahanSuccess', vahanSuccess ? '1' : '0')
       formData.append('npciVehicleClassID', String(vehicleDetails?.npciVehicleClassID || (vehicleForm.vehicleCategory === 'VC4' ? '4' : '0')))
-      formData.append('isChassis', mode === 'chassis' ? '1' : '0')
+      formData.append('tagVehicleClassID', String(vehicleDetails?.tagVehicleClassID || vehicleDetails?.npciVehicleClassID || (vehicleForm.vehicleCategory === 'VC4' ? '4' : '0')))
+      formData.append('isChassis', mode === 'chassis' ? '1' : '2') // 2 = OEM VRN
       
       requiredDocs.forEach(docType => {
         if(uploads[docType]) {
