@@ -285,7 +285,7 @@ export default function Registration() {
     setLoading(true)
     try {
       const res = await createWallet({
-        reqWallet: { sessionId, isChassis: mode === 'chassis' ? 1 : 0 },
+        reqWallet: { sessionId, isChassis: mode === 'chassis' ? 1 : 2 },  // 2 = OEM VRN: must match agentId used in sendOtp/validateOtp
         custDetails: {
           name, lastName, mobileNo: vehicleForm.mobileNo, dob,
           doc: [{ docType, docNo, ...(expiryDate ? { expiryDate } : {}) }],
