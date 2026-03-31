@@ -146,6 +146,7 @@ export default function Registration() {
     npciStatus: 'ACTIVE', isCommercial: false, tagVehicleClassID: '4', npciVehicleClassID: '4',
     vehicleType: '', vehicleDescriptor: '', isNationalPermit: '2', permitExpiryDate: '',
     stateOfRegistration: '', rechargeAmount: '0', securityDeposit: '0', tagCost: '0',
+    chassisNo: '', // collected manually in VRN mode when Vahan fails to return chassis
   })
   const [makeList, setMakeList] = useState([])
   const [modelList, setModelList] = useState([])
@@ -214,7 +215,9 @@ export default function Registration() {
   }
 
   // Check if critical fields are missing (Vahan failed or incomplete)
+  // In VRN mode, chassis is also required when Vahan didn't return it
   const hasIncompleteVehicleDetails = () => {
+    if (mode === 'vrn' && !vehicleDetails?.chassisNo && !vehEdit.chassisNo) return true
     return !vehEdit.vehicleManuf || !vehEdit.model || !vehEdit.vehicleColour || !vehEdit.vehicleDescriptor || !vehEdit.stateOfRegistration || !vehEdit.vehicleType
   }
 
@@ -420,12 +423,18 @@ export default function Registration() {
     if (!vehEdit.vehicleDescriptor) { toast.error('Please select Fuel Type'); return }
     if (!vehEdit.stateOfRegistration) { toast.error('Please select State of Registration'); return }
     if (!vehEdit.vehicleType) { toast.error('Please select Vehicle Type'); return }
+    // In VRN mode, Bajaj requires chassis number — mandatory when Vahan didn't provide it
+    if (mode === 'vrn' && !vehicleDetails?.chassisNo && !vehEdit.chassisNo) {
+      toast.error('Chassis Number is required when Vahan verification fails — enter it from the RC book')
+      return
+    }
     setLoading(true)
     try {
       const res = await registerFastag({
         isChassis: mode === 'chassis' ? 1 : 2,  // 1=chassis, 2=OEM VRN (agentId 70091, skips AI screening)
         vrn: vehicleDetails?.vehicleNo || vehicleForm.vehicleNo,
-        chassis: vehicleDetails?.chassisNo || vehicleForm.chassisNo,
+        // In VRN mode when Vahan fails, chassisNo comes from the manual input in Step 5
+        chassis: vehicleDetails?.chassisNo || vehicleForm.chassisNo || vehEdit.chassisNo || '',
         engine: vehicleDetails?.engineNo || vehicleForm.engineNo,
         vehicleManuf: vehEdit.vehicleManuf,
         model: vehEdit.model,
@@ -469,7 +478,7 @@ export default function Registration() {
     setSessionId(''); setOtpDigits(['','','','','','']); setVehicleDetails(null); setCustDetails(null); setVahanSuccess(false)
     setNeedsWallet(false); setKycForm({ name: '', lastName: '', dob: '', docType: '1', docNo: '', expiryDate: '' })
     setUploads({}); setUploadProgress({}); setAgentTags([]); setSelectedTag(null); setTagResult(null)
-    setVehEdit({ vehicleManuf: '', model: '', vehicleColour: '', type: 'VC4', status: 'ACTIVE', npciStatus: 'ACTIVE', isCommercial: false, tagVehicleClassID: '4', npciVehicleClassID: '4', vehicleType: '', vehicleDescriptor: '', isNationalPermit: '2', permitExpiryDate: '', stateOfRegistration: '', rechargeAmount: '0', securityDeposit: '0', tagCost: '0' })
+    setVehEdit({ vehicleManuf: '', model: '', vehicleColour: '', type: 'VC4', status: 'ACTIVE', npciStatus: 'ACTIVE', isCommercial: false, tagVehicleClassID: '4', npciVehicleClassID: '4', vehicleType: '', vehicleDescriptor: '', isNationalPermit: '2', permitExpiryDate: '', stateOfRegistration: '', rechargeAmount: '0', securityDeposit: '0', tagCost: '0', chassisNo: '' })
     setMakeList([]); setModelList([])
   }
 
@@ -669,6 +678,19 @@ export default function Registration() {
                 </summary>
                 <div className="p-4 space-y-3">
                   <div className="grid grid-cols-2 gap-3">
+                    {/* Chassis Number — shown in VRN mode when Vahan didn't return chassis number */}
+                    {mode === 'vrn' && !vehicleDetails?.chassisNo && (
+                      <div className="col-span-2">
+                        <label className="text-xs text-gray-500 mb-1 block">Chassis Number <span className="text-red-500">*</span></label>
+                        <input
+                          className="input-field text-sm font-mono"
+                          placeholder="Enter chassis number from RC book *"
+                          value={vehEdit.chassisNo}
+                          onChange={e => setVehEdit(f => ({ ...f, chassisNo: e.target.value.toUpperCase() }))}
+                        />
+                        <p className="text-xs text-amber-600 mt-1">⚠️ Vahan could not retrieve chassis number automatically — enter it manually from the RC book</p>
+                      </div>
+                    )}
                     {/* Manufacturer — searchable, from Bajaj API or typed */}
                     <SearchableSelect
                       label="Manufacturer" required allowCustom
